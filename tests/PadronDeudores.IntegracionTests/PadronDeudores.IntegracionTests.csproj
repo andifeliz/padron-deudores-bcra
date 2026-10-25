@@ -19,4 +19,8 @@
     <ProjectReference Include="..\..\src\PadronDeudores.Infraestructura\PadronDeudores.Infraestructura.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Muestras\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
