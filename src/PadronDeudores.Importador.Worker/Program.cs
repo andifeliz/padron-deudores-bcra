@@ -1,6 +1,6 @@
-using Npgsql;
 using PadronDeudores.Importador.Worker;
 using PadronDeudores.Importador.Worker.Procesamiento;
+using PadronDeudores.Infraestructura;
 using PadronDeudores.Infraestructura.Archivos;
 using PadronDeudores.Infraestructura.Logs;
 using PadronDeudores.Infraestructura.Persistencia;
@@ -8,11 +8,7 @@ using PadronDeudores.Infraestructura.Persistencia;
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.AgregarLogsEstructurados();
-
-var cadenaConexion = builder.Configuration.GetConnectionString("Importador")
-    ?? throw new InvalidOperationException("Falta la conexión ConnectionStrings:Importador.");
-
-builder.Services.AddSingleton(NpgsqlDataSource.Create(cadenaConexion));
+builder.AgregarBaseDeDatos("Importador");
 builder.Services.AddSingleton<IOrigenArchivo, OrigenDisco>();
 builder.Services.AddSingleton<LectorDeudores>();
 builder.Services.AddSingleton<CargadorStaging>();

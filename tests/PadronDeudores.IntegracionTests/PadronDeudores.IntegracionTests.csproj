@@ -6,7 +6,9 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Testcontainers.LocalStack" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -17,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\PadronDeudores.Importador.Api\PadronDeudores.Importador.Api.csproj" />
     <ProjectReference Include="..\..\src\PadronDeudores.Importador.Worker\PadronDeudores.Importador.Worker.csproj" />
     <ProjectReference Include="..\..\src\PadronDeudores.Infraestructura\PadronDeudores.Infraestructura.csproj" />
     <ProjectReference Include="..\..\src\PadronDeudores.Migraciones\PadronDeudores.Migraciones.csproj" />

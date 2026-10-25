@@ -1,14 +1,15 @@
 using Dapper;
 using Microsoft.Extensions.Logging.Abstractions;
+using PadronDeudores.Dominio;
 using PadronDeudores.Importador.Worker.Procesamiento;
 using PadronDeudores.Infraestructura.Archivos;
 using PadronDeudores.Infraestructura.Persistencia;
-using PadronDeudores.IntegracionTests.BaseDeDatos;
+using PadronDeudores.IntegracionTests.Entorno;
 
 namespace PadronDeudores.IntegracionTests.Procesamiento;
 
-[Collection(ColeccionBaseDeDatos.Nombre)]
-public class ProcesadorImportacionTests(BaseDeDatosFixture fixture)
+[Collection(ColeccionEntorno.Nombre)]
+public class ProcesadorImportacionTests(EntornoFixture fixture)
 {
     private const string Muestra = "Muestras/deudores-muestra.txt";
 
@@ -46,13 +47,11 @@ public class ProcesadorImportacionTests(BaseDeDatosFixture fixture)
         new RepositorioImportaciones(fixture.BaseDeDatos),
         NullLogger<ProcesadorImportacion>.Instance);
 
-    // Lo que hará la API de importación: registrar el pedido como pendiente.
+    // Lo mismo que hace la API al recibir el pedido: registrarlo como pendiente.
     private async Task<Guid> RegistrarImportacionAsync()
     {
         var id = Guid.CreateVersion7();
-        await using var conexion = await fixture.BaseDeDatos.OpenConnectionAsync();
-        await conexion.ExecuteAsync(
-            "INSERT INTO importaciones (id, origen, archivo, estado) VALUES (@id, 'ruta', @Muestra, 'pendiente')", new { id, Muestra });
+        await new RepositorioImportaciones(fixture.BaseDeDatos).RegistrarAsync(id, OrigenImportacion.Ruta, Muestra, CancellationToken.None);
         return id;
     }
 

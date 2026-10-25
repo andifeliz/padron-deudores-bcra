@@ -7,6 +7,20 @@ namespace PadronDeudores.Infraestructura.Persistencia;
 // Lee y actualiza el estado de las importaciones.
 public sealed class RepositorioImportaciones(NpgsqlDataSource baseDeDatos)
 {
+    public Task RegistrarAsync(Guid id, OrigenImportacion origen, string archivo, CancellationToken ct) =>
+        EjecutarAsync("INSERT INTO importaciones (id, origen, archivo, estado) VALUES (@id, @origen, @archivo, @estado)",
+            new { id, archivo, origen = Texto(origen), estado = Texto(EstadoImportacion.Pendiente) }, ct);
+
+    public async Task<Importacion?> ObtenerAsync(Guid id, CancellationToken ct)
+    {
+        await using var conexion = await baseDeDatos.OpenConnectionAsync(ct);
+        return await conexion.QuerySingleOrDefaultAsync<Importacion>(new CommandDefinition("""
+            SELECT id, origen, archivo, estado, creada_en AS CreadaEn, iniciada_en AS IniciadaEn,
+                   finalizada_en AS FinalizadaEn, resumen::text AS Resumen, error
+            FROM importaciones WHERE id = @id
+            """, new { id }, cancellationToken: ct));
+    }
+
     public async Task<EstadoImportacion?> ObtenerEstadoAsync(Guid id, CancellationToken ct)
     {
         await using var conexion = await baseDeDatos.OpenConnectionAsync(ct);
@@ -35,5 +49,5 @@ public sealed class RepositorioImportaciones(NpgsqlDataSource baseDeDatos)
         await conexion.ExecuteAsync(new CommandDefinition(sql, parametros, cancellationToken: ct));
     }
 
-    private static string Texto(EstadoImportacion estado) => estado.ToString().ToLowerInvariant();
+    private static string Texto(Enum valor) => valor.ToString().ToLowerInvariant();
 }

@@ -52,6 +52,15 @@ services:
     build:
       context: .
       dockerfile: src/PadronDeudores.Importador.Api/Dockerfile
+    environment:
+      ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:-importador}"
+      Aws__ServiceUrl: "http://localstack:4566"
+      Aws__Region: ${AWS_REGION:-us-east-1}
+      Aws__ColaImportaciones: ${SQS_COLA:-importaciones}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+    volumes:
+      - ./data:/data:ro
     ports:
       - "${IMPORTADOR_API_PORT:-5001}:8080"
     depends_on:

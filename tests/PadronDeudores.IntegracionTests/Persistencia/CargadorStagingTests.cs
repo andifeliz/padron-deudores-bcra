@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using PadronDeudores.Infraestructura.Archivos;
 using PadronDeudores.Infraestructura.Persistencia;
-using PadronDeudores.IntegracionTests.BaseDeDatos;
+using PadronDeudores.IntegracionTests.Entorno;
 
 namespace PadronDeudores.IntegracionTests.Persistencia;
 
-[Collection(ColeccionBaseDeDatos.Nombre)]
-public class CargadorStagingTests(BaseDeDatosFixture fixture)
+[Collection(ColeccionEntorno.Nombre)]
+public class CargadorStagingTests(EntornoFixture fixture)
 {
     [Fact]
     public async Task CargarAsync_DosVeces_ReemplazaElContenidoYGuardaElNivelDeRiesgo()

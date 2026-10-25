@@ -1,11 +1,11 @@
 using Npgsql;
 using PadronDeudores.Infraestructura.Persistencia;
-using PadronDeudores.IntegracionTests.BaseDeDatos;
+using PadronDeudores.IntegracionTests.Entorno;
 
 namespace PadronDeudores.IntegracionTests.Persistencia;
 
-[Collection(ColeccionBaseDeDatos.Nombre)]
-public class ConsolidadorResumenesTests(BaseDeDatosFixture fixture)
+[Collection(ColeccionEntorno.Nombre)]
+public class ConsolidadorResumenesTests(EntornoFixture fixture)
 {
     [Fact]
     public async Task ReemplazarAsync_CalculaSituacionMaximaPorRiesgoYSumas()
