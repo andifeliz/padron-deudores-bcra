@@ -20,6 +20,3 @@ app.MapImportarDesdeRuta();
 app.MapObtenerImportacion();
 
 app.Run();
-
-// Visible para los tests de integración (WebApplicationFactory).
-public partial class Program;

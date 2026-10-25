@@ -1,6 +1,11 @@
 using Amazon.Runtime;
 using Amazon.SQS;
+using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
+using PadronDeudores.Dominio;
+using PadronDeudores.Importador.Worker.Procesamiento;
+using PadronDeudores.Infraestructura.Archivos;
+using PadronDeudores.Infraestructura.Persistencia;
 using PadronDeudores.Migraciones;
 using Testcontainers.LocalStack;
 using Testcontainers.PostgreSql;
@@ -40,6 +45,23 @@ public sealed class EntornoFixture : IAsyncLifetime
         Sqs = new AmazonSQSClient(new BasicAWSCredentials("test", "test"),
             new AmazonSQSConfig { ServiceURL = UrlLocalStack, AuthenticationRegion = Region });
         await Sqs.CreateQueueAsync(Cola);
+    }
+
+    public ProcesadorImportacion CrearProcesador() => new(
+        BaseDeDatos,
+        new OrigenDisco(),
+        new LectorDeudores(NullLogger<LectorDeudores>.Instance),
+        new CargadorStaging(BaseDeDatos),
+        new ConsolidadorResumenes(),
+        new RepositorioImportaciones(BaseDeDatos),
+        NullLogger<ProcesadorImportacion>.Instance);
+
+    // Lo mismo que hace la API al recibir el pedido: registrarlo como pendiente.
+    public async Task<Guid> RegistrarImportacionAsync(string archivo)
+    {
+        var id = Guid.CreateVersion7();
+        await new RepositorioImportaciones(BaseDeDatos).RegistrarAsync(id, OrigenImportacion.Ruta, archivo, CancellationToken.None);
+        return id;
     }
 
     public async Task DisposeAsync()

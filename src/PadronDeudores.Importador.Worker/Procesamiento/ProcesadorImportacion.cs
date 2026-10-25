@@ -23,7 +23,7 @@ public sealed class ProcesadorImportacion(
 
     private static readonly JsonSerializerOptions FormatoJson = new(JsonSerializerDefaults.Web);
 
-    // Devuelve null si la importación ya estaba completada (mensaje duplicado).
+    // Devuelve null si la importación no existe o ya estaba completada (mensaje duplicado).
     public async Task<ResumenImportacion?> ProcesarAsync(Guid id, string archivo, CancellationToken ct)
     {
         await using var conexionLock = await baseDeDatos.OpenConnectionAsync(ct);
@@ -31,10 +31,14 @@ public sealed class ProcesadorImportacion(
 
         try
         {
-            if (await importaciones.ObtenerEstadoAsync(id, ct) is EstadoImportacion.Completada)
+            switch (await importaciones.ObtenerEstadoAsync(id, ct))
             {
-                logger.LogInformation("Importación {ImportacionId} ya completada: se ignora el mensaje duplicado", id);
-                return null;
+                case null:
+                    logger.LogWarning("Importación {ImportacionId} inexistente: se ignora el mensaje", id);
+                    return null;
+                case EstadoImportacion.Completada:
+                    logger.LogInformation("Importación {ImportacionId} ya completada: se ignora el mensaje duplicado", id);
+                    return null;
             }
 
             return await ImportarAsync(id, archivo, ct);

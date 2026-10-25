@@ -9,6 +9,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.AgregarLogsEstructurados();
 builder.AgregarBaseDeDatos("Importador");
+builder.AgregarColaImportaciones();
 builder.Services.AddSingleton<IOrigenArchivo, OrigenDisco>();
 builder.Services.AddSingleton<LectorDeudores>();
 builder.Services.AddSingleton<CargadorStaging>();

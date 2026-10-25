@@ -1,9 +1,4 @@
 using Dapper;
-using Microsoft.Extensions.Logging.Abstractions;
-using PadronDeudores.Dominio;
-using PadronDeudores.Importador.Worker.Procesamiento;
-using PadronDeudores.Infraestructura.Archivos;
-using PadronDeudores.Infraestructura.Persistencia;
 using PadronDeudores.IntegracionTests.Entorno;
 
 namespace PadronDeudores.IntegracionTests.Procesamiento;
@@ -16,9 +11,9 @@ public class ProcesadorImportacionTests(EntornoFixture fixture)
     [Fact]
     public async Task ProcesarAsync_ArchivoReal_CompletaLaImportacionConSuResumen()
     {
-        var id = await RegistrarImportacionAsync();
+        var id = await fixture.RegistrarImportacionAsync(Muestra);
 
-        var resumen = await CrearProcesador().ProcesarAsync(id, Muestra, CancellationToken.None);
+        var resumen = await fixture.CrearProcesador().ProcesarAsync(id, Muestra, CancellationToken.None);
 
         Assert.NotNull(resumen);
         Assert.Equal((5L, 1L, 4L, 2L), (resumen.LineasLeidas, resumen.LineasInvalidas, resumen.Deudores, resumen.Entidades));
@@ -29,30 +24,13 @@ public class ProcesadorImportacionTests(EntornoFixture fixture)
     [Fact]
     public async Task ProcesarAsync_MensajeDuplicado_NoVuelveAProcesar()
     {
-        var id = await RegistrarImportacionAsync();
-        var procesador = CrearProcesador();
+        var id = await fixture.RegistrarImportacionAsync(Muestra);
+        var procesador = fixture.CrearProcesador();
 
         await procesador.ProcesarAsync(id, Muestra, CancellationToken.None);
         var segundaVez = await procesador.ProcesarAsync(id, Muestra, CancellationToken.None);
 
         Assert.Null(segundaVez);
-    }
-
-    private ProcesadorImportacion CrearProcesador() => new(
-        fixture.BaseDeDatos,
-        new OrigenDisco(),
-        new LectorDeudores(NullLogger<LectorDeudores>.Instance),
-        new CargadorStaging(fixture.BaseDeDatos),
-        new ConsolidadorResumenes(),
-        new RepositorioImportaciones(fixture.BaseDeDatos),
-        NullLogger<ProcesadorImportacion>.Instance);
-
-    // Lo mismo que hace la API al recibir el pedido: registrarlo como pendiente.
-    private async Task<Guid> RegistrarImportacionAsync()
-    {
-        var id = Guid.CreateVersion7();
-        await new RepositorioImportaciones(fixture.BaseDeDatos).RegistrarAsync(id, OrigenImportacion.Ruta, Muestra, CancellationToken.None);
-        return id;
     }
 
     private async Task<T> ConsultarAsync<T>(string sql, Guid id)
