@@ -1,0 +1,9 @@
+# Normaliza fines de línea a LF en el repo
+* text=auto eol=lf
+
+# Archivos de muestra del BCRA para tests: se guardan tal cual (CRLF y Latin-1), sin normalizar
+tests/**/Muestras/*.txt -text
+
+*.sln text eol=crlf
+*.png binary
+*.pdf binary
