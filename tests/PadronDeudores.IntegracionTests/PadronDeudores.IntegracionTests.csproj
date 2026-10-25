@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\PadronDeudores.Importador.Worker\PadronDeudores.Importador.Worker.csproj" />
     <ProjectReference Include="..\..\src\PadronDeudores.Infraestructura\PadronDeudores.Infraestructura.csproj" />
     <ProjectReference Include="..\..\src\PadronDeudores.Migraciones\PadronDeudores.Migraciones.csproj" />
   </ItemGroup>
