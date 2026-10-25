@@ -1,0 +1,99 @@
+name: padron-deudores
+
+services:
+  postgres:
+    image: postgres:17.10
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-padron}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_IMPORTADOR_PASSWORD: ${DB_IMPORTADOR_PASSWORD:-importador}
+      DB_CONSULTA_PASSWORD: ${DB_CONSULTA_PASSWORD:-consulta}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-datos:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  localstack:
+    image: localstack/localstack:4.14.0
+    environment:
+      SERVICES: s3,sqs
+      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-padron-archivos}
+      SQS_COLA: ${SQS_COLA:-importaciones}
+      SQS_COLA_FALLIDOS: ${SQS_COLA_FALLIDOS:-importaciones-fallidas}
+    ports:
+      - "${LOCALSTACK_PORT:-4566}:4566"
+    volumes:
+      - ./docker/localstack/init.sh:/etc/localstack/init/ready.d/init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal sqs get-queue-url --queue-name $${SQS_COLA} > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migraciones:
+    build:
+      context: .
+      dockerfile: src/PadronDeudores.Migraciones/Dockerfile
+    environment:
+      ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:-importador}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  importador-api:
+    build:
+      context: .
+      dockerfile: src/PadronDeudores.Importador.Api/Dockerfile
+    ports:
+      - "${IMPORTADOR_API_PORT:-5001}:8080"
+    depends_on:
+      migraciones:
+        condition: service_completed_successfully
+      localstack:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  importador-worker:
+    build:
+      context: .
+      dockerfile: src/PadronDeudores.Importador.Worker/Dockerfile
+    depends_on:
+      migraciones:
+        condition: service_completed_successfully
+      localstack:
+        condition: service_healthy
+
+  consulta-api:
+    build:
+      context: .
+      dockerfile: src/PadronDeudores.Consulta.Api/Dockerfile
+    ports:
+      - "${CONSULTA_API_PORT:-5002}:8080"
+    depends_on:
+      migraciones:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  webhook-receptor:
+    image: mendhak/http-https-echo:42
+    ports:
+      - "${WEBHOOK_PORT:-8080}:8080"
+
+volumes:
+  postgres-datos:

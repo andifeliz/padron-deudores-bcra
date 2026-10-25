@@ -1,0 +1,6 @@
+# Lo que no se manda a Docker al construir imágenes.
+**/bin/
+**/obj/
+data/
+.git/
+.env
