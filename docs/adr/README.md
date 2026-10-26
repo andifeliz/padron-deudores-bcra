@@ -33,14 +33,15 @@ Un ADR no se reescribe cuando cambia una decisión: se crea uno nuevo que lo ree
 
 Cómo se interpretan los datos del BCRA y lo que el enunciado no define.
 
-| ADR                                               | Decisión                                                              |
-| ------------------------------------------------- | --------------------------------------------------------------------- |
-| [0001](0001-situacion-maxima-por-riesgo.md)       | La situación máxima se elige por nivel de riesgo, no por número       |
-| [0002](0002-periodos-del-archivo.md)              | Se procesan todas las líneas, aunque traigan distintos períodos       |
-| [0003](0003-identificaciones-del-exterior.md)     | Se incluyen los deudores del exterior (tipos 98 y 99)                 |
-| [0009](0009-montos-en-miles.md)                   | Los montos se guardan y se devuelven en miles de pesos, como vienen   |
-| [0010](0010-reimportacion-reemplaza-resumenes.md) | Cada importación reemplaza los datos de deudores y entidades          |
-| [0011](0011-top-n-limite-y-desempate.md)          | El top N tiene un máximo, un desempate fijo y un filtro por situación |
+| ADR                                               | Decisión                                                                           |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [0001](0001-situacion-maxima-por-riesgo.md)       | La situación máxima se elige por nivel de riesgo, no por número                    |
+| [0002](0002-periodos-del-archivo.md)              | Se procesan todas las líneas, aunque traigan distintos períodos                    |
+| [0003](0003-identificaciones-del-exterior.md)     | Se incluyen los deudores del exterior (tipos 98 y 99)                              |
+| [0009](0009-montos-en-miles.md)                   | Los montos se guardan y se devuelven en miles de pesos, como vienen                |
+| [0010](0010-reimportacion-reemplaza-resumenes.md) | Cada importación reemplaza los datos de deudores y entidades                       |
+| [0011](0011-top-n-limite-y-desempate.md)          | El top N tiene un máximo, un desempate fijo y un filtro por situación              |
+| [0017](0017-nombres-de-entidades-y-deudores.md)   | No se cargan los nombres de entidades ni de deudores (`Maeent.txt` y `Nomdeu.txt`) |
 
 ---
 
