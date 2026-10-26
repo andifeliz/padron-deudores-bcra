@@ -19,6 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Alias: las dos APIs tienen una clase Program y hay que poder distinguirlas. -->
+    <ProjectReference Include="..\..\src\PadronDeudores.Consulta.Api\PadronDeudores.Consulta.Api.csproj" Aliases="ConsultaApi" />
     <ProjectReference Include="..\..\src\PadronDeudores.Importador.Api\PadronDeudores.Importador.Api.csproj" />
     <ProjectReference Include="..\..\src\PadronDeudores.Importador.Worker\PadronDeudores.Importador.Worker.csproj" />
     <ProjectReference Include="..\..\src\PadronDeudores.Infraestructura\PadronDeudores.Infraestructura.csproj" />

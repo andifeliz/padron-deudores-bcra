@@ -107,6 +107,8 @@ services:
       context: .
       dockerfile: src/PadronDeudores.Consulta.Api/Dockerfile
     init: true
+    environment:
+      ConnectionStrings__Consulta: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=consulta;Password=${DB_CONSULTA_PASSWORD:-consulta}"
     ports:
       - "${CONSULTA_API_PORT:-5002}:8080"
     depends_on:

@@ -28,13 +28,17 @@ public sealed class EntornoFixture : IAsyncLifetime
     public string CadenaConexion => _postgres.GetConnectionString();
     public string UrlLocalStack => _localStack.GetConnectionString();
 
+    // La misma base, con el usuario de solo lectura que usa la API de consulta.
+    public string CadenaConexionConsulta =>
+        new NpgsqlConnectionStringBuilder(CadenaConexion) { Username = "consulta", Password = "consulta" }.ConnectionString;
+
     public async Task InitializeAsync()
     {
         await Task.WhenAll(_postgres.StartAsync(), _localStack.StartAsync());
         BaseDeDatos = NpgsqlDataSource.Create(CadenaConexion);
 
         // En los tests no corre 01-usuarios.sh: creamos los usuarios acá para que la migración pueda darles permisos.
-        await using (var usuarios = BaseDeDatos.CreateCommand("CREATE ROLE importador LOGIN; CREATE ROLE consulta LOGIN;"))
+        await using (var usuarios = BaseDeDatos.CreateCommand("CREATE ROLE importador LOGIN PASSWORD 'importador'; CREATE ROLE consulta LOGIN PASSWORD 'consulta';"))
         {
             await usuarios.ExecuteNonQueryAsync();
         }
