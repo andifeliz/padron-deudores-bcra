@@ -3,6 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.104.2" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.100.16" />
     <PackageVersion Include="Dapper" Version="2.1.89" />
     <PackageVersion Include="dbup-postgresql" Version="7.0.1" />

@@ -63,6 +63,8 @@ services:
       Aws__ColaImportaciones: ${SQS_COLA:-importaciones}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      Importacion__BucketArchivos: ${S3_BUCKET:-padron-archivos}
+      Importacion__TamanioMaximoUploadMiB: ${UPLOAD_MAXIMO_MIB:-8192}
     volumes:
       - ./data:/data:ro
     ports:

@@ -1,4 +1,5 @@
 using Amazon.Runtime;
+using Amazon.S3;
 using Amazon.SQS;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
@@ -19,12 +20,14 @@ public sealed class EntornoFixture : IAsyncLifetime
 {
     public const string Region = "us-east-1";
     public const string Cola = "importaciones";
+    public const string Bucket = "padron-archivos";
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17.10").Build();
     private readonly LocalStackContainer _localStack = new LocalStackBuilder("localstack/localstack:4.14.0").Build();
 
     public NpgsqlDataSource BaseDeDatos { get; private set; } = null!;
     public IAmazonSQS Sqs { get; private set; } = null!;
+    public IAmazonS3 S3 { get; private set; } = null!;
     public string CadenaConexion => _postgres.GetConnectionString();
     public string UrlLocalStack => _localStack.GetConnectionString();
 
@@ -51,11 +54,14 @@ public sealed class EntornoFixture : IAsyncLifetime
         Sqs = new AmazonSQSClient(new BasicAWSCredentials("test", "test"),
             new AmazonSQSConfig { ServiceURL = UrlLocalStack, AuthenticationRegion = Region });
         await Sqs.CreateQueueAsync(Cola);
+        S3 = new AmazonS3Client(new BasicAWSCredentials("test", "test"),
+            new AmazonS3Config { ServiceURL = UrlLocalStack, AuthenticationRegion = Region, ForcePathStyle = true });
+        await S3.PutBucketAsync(Bucket);
     }
 
     public ProcesadorImportacion CrearProcesador(INotificador? notificador = null) => new(
         BaseDeDatos,
-        new OrigenDisco(),
+        new OrigenSegunArchivo(new OrigenDisco(), new ArchivosS3(S3)),
         new LectorDeudores(NullLogger<LectorDeudores>.Instance),
         new CargadorStaging(BaseDeDatos),
         new ConsolidadorResumenes(),
@@ -74,6 +80,7 @@ public sealed class EntornoFixture : IAsyncLifetime
     public async Task DisposeAsync()
     {
         Sqs.Dispose();
+        S3.Dispose();
         await BaseDeDatos.DisposeAsync();
         await Task.WhenAll(_postgres.DisposeAsync().AsTask(), _localStack.DisposeAsync().AsTask());
     }

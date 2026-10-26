@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Amazon.SQS.Model;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using PadronDeudores.IntegracionTests.Entorno;
 
@@ -21,7 +23,12 @@ public class ImportacionesApiTests(EntornoFixture fixture)
         Assert.Equal(HttpStatusCode.Accepted, respuesta.StatusCode);
         var consulta = await cliente.GetFromJsonAsync<JsonElement>(respuesta.Headers.Location);
         Assert.Equal("pendiente", consulta.GetProperty("estado").GetString());
-        var mensajes = await fixture.Sqs.ReceiveMessageAsync((await fixture.Sqs.GetQueueUrlAsync(EntornoFixture.Cola)).QueueUrl);
+        // Hasta 10 mensajes: otros tests también encolan en esta cola.
+        var mensajes = await fixture.Sqs.ReceiveMessageAsync(new ReceiveMessageRequest
+        {
+            QueueUrl = (await fixture.Sqs.GetQueueUrlAsync(EntornoFixture.Cola)).QueueUrl,
+            MaxNumberOfMessages = 10,
+        });
         Assert.Contains(mensajes.Messages, m => m.Body.Contains(id!));
     }
 
@@ -47,9 +54,44 @@ public class ImportacionesApiTests(EntornoFixture fixture)
         Assert.Equal(HttpStatusCode.NotFound, respuesta.StatusCode);
     }
 
+    [Fact]
+    public async Task PostUpload_Archivo_LoGuardaEnS3YEncolaLaImportacion()
+    {
+        await using var api = CrearApi();
+        var cliente = api.CreateClient();
+
+        var respuesta = await cliente.PostAsync("/upload?nombre=deudores-muestra.txt", new ByteArrayContent(await File.ReadAllBytesAsync("Muestras/deudores-muestra.txt")));
+
+        Assert.Equal(HttpStatusCode.Accepted, respuesta.StatusCode);
+        var importacion = await cliente.GetFromJsonAsync<JsonElement>(respuesta.Headers.Location);
+        Assert.Equal("upload", importacion.GetProperty("origen").GetString());
+        var archivo = importacion.GetProperty("archivo").GetString()!;
+        Assert.StartsWith($"s3://{EntornoFixture.Bucket}/importaciones/", archivo);
+        var objeto = await fixture.S3.GetObjectMetadataAsync(EntornoFixture.Bucket, archivo[$"s3://{EntornoFixture.Bucket}/".Length..]);
+        Assert.Equal(new FileInfo("Muestras/deudores-muestra.txt").Length, objeto.ContentLength);
+    }
+
+    [Theory]
+    [InlineData("deudores.txt", 0, HttpStatusCode.BadRequest)]
+    [InlineData("../deudores.txt", 10, HttpStatusCode.BadRequest)]
+    [InlineData("deudores.txt", 2 * 1024 * 1024, HttpStatusCode.RequestEntityTooLarge)]
+    public async Task PostUpload_PedidoInvalido_LoRechaza(string nombre, int bytes, HttpStatusCode esperado)
+    {
+        // Máximo de 1 MiB, para probar el límite sin mandar gigas.
+        await using var api = CrearApi(b => b.UseSetting("Importacion:TamanioMaximoUploadMiB", "1"));
+
+        var respuesta = await api.CreateClient().PostAsync($"/upload?nombre={Uri.EscapeDataString(nombre)}", new ByteArrayContent(new byte[bytes]));
+
+        Assert.Equal(esperado, respuesta.StatusCode);
+    }
+
     // La API real, apuntando a la base y a la cola de los contenedores de test.
-    private WebApplicationFactory<Program> CrearApi() => new WebApplicationFactory<Program>().WithWebHostBuilder(b => b
-        .UseSetting("ConnectionStrings:Importador", fixture.CadenaConexion)
-        .UseSetting("Aws:ServiceUrl", fixture.UrlLocalStack)
-        .UseSetting("Importacion:DirectorioArchivos", Path.GetFullPath("Muestras")));
+    private WebApplicationFactory<Program> CrearApi(Action<IWebHostBuilder>? ajustes = null) =>
+        new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
+        {
+            b.UseSetting("ConnectionStrings:Importador", fixture.CadenaConexion)
+                .UseSetting("Aws:ServiceUrl", fixture.UrlLocalStack)
+                .UseSetting("Importacion:DirectorioArchivos", Path.GetFullPath("Muestras"));
+            ajustes?.Invoke(b);
+        });
 }

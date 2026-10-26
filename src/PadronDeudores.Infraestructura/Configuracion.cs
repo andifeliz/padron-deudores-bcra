@@ -1,10 +1,13 @@
 using Amazon;
+using Amazon.Runtime;
+using Amazon.S3;
 using Amazon.SQS;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using PadronDeudores.Infraestructura.Archivos;
 using PadronDeudores.Infraestructura.Mensajeria;
 
 namespace PadronDeudores.Infraestructura;
@@ -27,16 +30,37 @@ public static class Configuracion
     public static void AgregarColaImportaciones(this IHostApplicationBuilder builder)
     {
         builder.Services.AgregarOpciones<OpcionesAws>(OpcionesAws.Seccion);
-        builder.Services.AddSingleton<IAmazonSQS>(sp => new AmazonSQSClient(CrearConfigSqs(sp.GetRequiredService<IOptions<OpcionesAws>>().Value)));
+        builder.Services.AddSingleton<IAmazonSQS>(sp => new AmazonSQSClient(Configurar(new AmazonSQSConfig(), Aws(sp))));
         builder.Services.AddSingleton<ColaImportaciones>();
+    }
+
+    // ForcePathStyle: LocalStack recibe el bucket en la ruta (localstack:4566/bucket) y no como subdominio.
+    public static void AgregarArchivosS3(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AgregarOpciones<OpcionesAws>(OpcionesAws.Seccion);
+        builder.Services.AddSingleton<IAmazonS3>(sp => new AmazonS3Client(Configurar(new AmazonS3Config { ForcePathStyle = true }, Aws(sp))));
+        builder.Services.AddSingleton<ArchivosS3>();
     }
 
     // Lee la sección de configuración y la valida al arrancar: si falta algo, el servicio no levanta.
     public static void AgregarOpciones<T>(this IServiceCollection services, string seccion) where T : class =>
         services.AddOptions<T>().BindConfiguration(seccion).ValidateDataAnnotations().ValidateOnStart();
 
-    private static AmazonSQSConfig CrearConfigSqs(OpcionesAws aws) =>
-        string.IsNullOrEmpty(aws.ServiceUrl)
-            ? new AmazonSQSConfig { RegionEndpoint = RegionEndpoint.GetBySystemName(aws.Region) }
-            : new AmazonSQSConfig { ServiceURL = aws.ServiceUrl, AuthenticationRegion = aws.Region };
+    private static OpcionesAws Aws(IServiceProvider servicios) => servicios.GetRequiredService<IOptions<OpcionesAws>>().Value;
+
+    // Con LocalStack, su dirección; en AWS real, la región.
+    private static T Configurar<T>(T config, OpcionesAws aws) where T : ClientConfig
+    {
+        if (string.IsNullOrEmpty(aws.ServiceUrl))
+        {
+            config.RegionEndpoint = RegionEndpoint.GetBySystemName(aws.Region);
+        }
+        else
+        {
+            config.ServiceURL = aws.ServiceUrl;
+            config.AuthenticationRegion = aws.Region;
+        }
+
+        return config;
+    }
 }

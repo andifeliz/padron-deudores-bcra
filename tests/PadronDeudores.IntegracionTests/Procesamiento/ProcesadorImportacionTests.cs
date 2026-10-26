@@ -1,5 +1,6 @@
 using Dapper;
 using PadronDeudores.Dominio;
+using PadronDeudores.Infraestructura.Archivos;
 using PadronDeudores.IntegracionTests.Entorno;
 using PadronDeudores.IntegracionTests.Notificaciones;
 
@@ -24,6 +25,18 @@ public class ProcesadorImportacionTests(EntornoFixture fixture)
         Assert.Equal(4L, await ConsultarAsync<long>("SELECT count(*) FROM deudores", id));
         Assert.Equal(0L, await ConsultarAsync<long>("SELECT count(*) FROM staging", id));
         Assert.Equal(EstadoImportacion.Completada, Assert.Single(notificador.Enviadas).Estado);
+    }
+
+    [Fact]
+    public async Task ProcesarAsync_ArchivoEnS3_LoLeeDeAhiYCompletaLaImportacion()
+    {
+        await using var muestra = File.OpenRead(Muestra);
+        var archivo = await new ArchivosS3(fixture.S3).SubirAsync(EntornoFixture.Bucket, "pruebas/muestra.txt", muestra, CancellationToken.None);
+        var id = await fixture.RegistrarImportacionAsync(archivo);
+
+        var resumen = await fixture.CrearProcesador().ProcesarAsync(id, archivo, CancellationToken.None);
+
+        Assert.Equal((5L, 4L), (resumen!.LineasLeidas, resumen.Deudores));
     }
 
     [Fact]
