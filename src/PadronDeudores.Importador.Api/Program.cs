@@ -20,7 +20,9 @@ builder.AgregarArchivosS3();
 builder.Services.AgregarOpciones<OpcionesArchivos>(OpcionesArchivos.Seccion);
 builder.Services.AgregarOpciones<OpcionesImportacion>(OpcionesImportacion.Seccion);
 builder.Services.AddSingleton<RepositorioImportaciones>();
+builder.Services.AddSingleton<EnvioImportaciones>();
 builder.Services.AddSingleton<RegistroImportacion>();
+builder.Services.AddHostedService<RepartidorImportaciones>();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi(opciones => opciones.AddDocumentTransformer((documento, _, _) =>
 {

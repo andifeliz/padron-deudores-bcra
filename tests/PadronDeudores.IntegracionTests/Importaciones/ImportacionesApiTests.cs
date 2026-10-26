@@ -30,6 +30,20 @@ public class ImportacionesApiTests(EntornoFixture fixture)
             MaxNumberOfMessages = 10,
         });
         Assert.Contains(mensajes.Messages, m => m.Body.Contains(id!));
+        Assert.True(await EstaEncoladaAsync(Guid.Parse(id!)));
+    }
+
+    [Fact]
+    public async Task Post_ColaCaida_IgualAceptaElPedidoYLoDejaParaElRepartidor()
+    {
+        // La cola apunta a un puerto donde no hay nada: SQS "caído".
+        await using var api = CrearApi(b => b.UseSetting("Aws:ServiceUrl", "http://localhost:1"));
+
+        var respuesta = await api.CreateClient().PostAsJsonAsync("/importaciones", new { archivo = "deudores-muestra.txt" });
+        var id = (await respuesta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        Assert.Equal(HttpStatusCode.Accepted, respuesta.StatusCode);
+        Assert.False(await EstaEncoladaAsync(id));
     }
 
     [Theory]
@@ -95,6 +109,13 @@ public class ImportacionesApiTests(EntornoFixture fixture)
         var rutas = documento.GetProperty("paths").EnumerateObject().Select(ruta => ruta.Name);
 
         Assert.Equal(["/importaciones", "/importaciones/{id}", "/upload"], rutas.Order());
+    }
+
+    private async Task<bool> EstaEncoladaAsync(Guid id)
+    {
+        await using var consulta = fixture.BaseDeDatos.CreateCommand("SELECT encolada_en IS NOT NULL FROM importaciones WHERE id = $1");
+        consulta.Parameters.AddWithValue(id);
+        return (bool)(await consulta.ExecuteScalarAsync())!;
     }
 
     // La API real, apuntando a la base y a la cola de los contenedores de test.

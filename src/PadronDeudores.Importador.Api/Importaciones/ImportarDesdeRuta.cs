@@ -13,11 +13,10 @@ public static class ImportarDesdeRuta
         app.MapPost("/importaciones", ManejarAsync)
             .WithTags("Importaciones")
             .WithSummary("Importar un archivo de la carpeta de datos")
-            .WithDescription("Recibe el nombre de un archivo de la carpeta de datos (por ejemplo deudores.txt), registra la importación y la encola. Responde enseguida: el procesamiento sigue en segundo plano.")
+            .WithDescription("Recibe el nombre de un archivo de la carpeta de datos (por ejemplo deudores.txt), registra la importación y la encola (si la cola no responde, se encola apenas vuelva). Responde enseguida: el procesamiento sigue en segundo plano.")
             .Produces<ImportacionAceptada>(StatusCodes.Status202Accepted)
             .ProducesValidationProblem()
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static async Task<IResult> ManejarAsync(
         Pedido pedido,

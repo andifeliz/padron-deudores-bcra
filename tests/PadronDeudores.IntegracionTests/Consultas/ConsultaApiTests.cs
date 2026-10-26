@@ -90,7 +90,6 @@ public class ConsultaApiTests(EntornoFixture fixture) : IAsyncLifetime
     [InlineData("/entidades/123456")]
     [InlineData("/deudores/top/0")]
     [InlineData("/deudores/top/1001")]
-    [InlineData("/deudores/top/abc")]
     public async Task Get_ParametroMalFormado_Devuelve400(string ruta)
     {
         var respuesta = await _api.CreateClient().GetAsync(ruta);

@@ -29,6 +29,22 @@ public sealed class RepositorioImportaciones(NpgsqlDataSource baseDeDatos)
         return estado is null ? null : Enum.Parse<EstadoImportacion>(estado, ignoreCase: true);
     }
 
+    public Task MarcarEncoladaAsync(Guid id, CancellationToken ct) =>
+        EjecutarAsync("UPDATE importaciones SET encolada_en = now() WHERE id = @id", new { id }, ct);
+
+    // Pendientes cuyo mensaje no llegó a la cola, con cierta antigüedad para no competir con el envío normal del pedido.
+    public async Task<IReadOnlyList<ImportacionSinEncolar>> ObtenerSinEncolarAsync(TimeSpan antiguedad, int maximo, CancellationToken ct)
+    {
+        await using var conexion = await baseDeDatos.OpenConnectionAsync(ct);
+        var importaciones = await conexion.QueryAsync<ImportacionSinEncolar>(new CommandDefinition("""
+            SELECT id, archivo FROM importaciones
+            WHERE encolada_en IS NULL AND estado = @estado AND creada_en < now() - @antiguedad
+            ORDER BY creada_en
+            LIMIT @maximo
+            """, new { antiguedad, maximo, estado = Texto(EstadoImportacion.Pendiente) }, cancellationToken: ct));
+        return importaciones.AsList();
+    }
+
     public Task MarcarProcesandoAsync(Guid id, CancellationToken ct) =>
         EjecutarAsync("UPDATE importaciones SET estado = @estado, iniciada_en = now() WHERE id = @id",
             new { id, estado = Texto(EstadoImportacion.Procesando) }, ct);

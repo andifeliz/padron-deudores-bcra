@@ -19,8 +19,7 @@ public static class ImportarDesdeUpload
             .Accepts<byte[]>("application/octet-stream")
             .Produces<ImportacionAceptada>(StatusCodes.Status202Accepted)
             .ProducesValidationProblem()
-            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge);
 
     private static async Task<IResult> ManejarAsync(
         HttpContext http,

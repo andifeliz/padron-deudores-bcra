@@ -1,5 +1,3 @@
-using PadronDeudores.Dominio;
-
 namespace PadronDeudores.Dominio.Tests;
 
 public class NivelDeRiesgoTests

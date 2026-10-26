@@ -1,5 +1,3 @@
-using PadronDeudores.Dominio;
-
 namespace PadronDeudores.Dominio.Tests;
 
 // Líneas reales de deudores.txt (noviembre 2023), con la identificación de personas reemplazada por una ficticia.
