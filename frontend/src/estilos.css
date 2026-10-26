@@ -1,0 +1,146 @@
+/* Colores y tipografía tomados del estilo de Wayni: fondo beige, texto casi negro y naranja como acento. */
+:root {
+  --oscuro: #161616;
+  --fondo: #f9f9f5;
+  --beige: #ededdf;
+  --blanco: #ffffff;
+  --naranja: #fa5e14;
+  --naranja-claro: #fe8d23;
+  --lima: #c2eb61;
+  --lima-claro: #e1f5b0;
+  --rosa: #f8bfff;
+  --amarillo: #f2ef4d;
+  --verde: #025944;
+  --rojo: #c7270f;
+  --gris: #7e7d7d;
+  --borde: #d1d1d7;
+  --radio: 16px;
+  font-family: "Rethink Sans", system-ui, sans-serif;
+  color: var(--oscuro);
+  background: var(--fondo);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 0.9em; }
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px clamp(16px, 4vw, 48px);
+  /* Franjas diagonales en dos tonos de lima, como en la billetera de Wayni. */
+  background: var(--lima) url("./assets/fondo-encabezado.svg") center / 100% 100% no-repeat;
+  color: var(--oscuro);
+}
+.encabezado h1 { margin: 0; font-size: 1.6rem; font-weight: 700; }
+.encabezado h1::after { content: "."; color: var(--naranja); }
+.encabezado p { margin: 4px 0 0; font-weight: 500; }
+
+.salud { display: flex; gap: 12px; list-style: none; margin: 0; padding: 0; font-size: 0.9rem; }
+.salud-api { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--oscuro); color: var(--blanco); }
+.salud-api .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--gris); }
+.salud-api.ok .punto { background: var(--lima); }
+.salud-api.caida .punto { background: var(--rojo); }
+
+.pestanias { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px clamp(16px, 4vw, 48px) 0; }
+.pestanias button {
+  border: 1px solid var(--oscuro);
+  background: transparent;
+  color: var(--oscuro);
+  border-radius: 999px;
+  padding: 8px 20px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pestanias [aria-selected="true"] { background: var(--oscuro); color: var(--blanco); }
+
+main { padding: 20px clamp(16px, 4vw, 48px) 48px; max-width: 1200px; }
+.panel { display: grid; gap: 20px; }
+.panel[hidden] { display: none; }
+
+.filtro-activo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.boton-secundario {
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid var(--oscuro);
+  border-radius: 999px;
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--oscuro);
+  cursor: pointer;
+}
+.boton-secundario:hover { background: var(--oscuro); color: var(--blanco); }
+
+.grilla-2 { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+
+.tarjeta { background: var(--blanco); border: 1px solid var(--beige); border-radius: var(--radio); padding: 20px 24px; min-width: 0; }
+.tarjeta h2 { margin: 0 0 4px; font-size: 1.15rem; }
+.descripcion, .nota, .vacio { color: var(--gris); margin: 0 0 16px; }
+.nota { font-size: 0.85rem; margin: 0; }
+.vacio { margin: 8px 0; }
+
+.formulario { display: grid; gap: 12px; }
+.formulario.en-linea { display: flex; flex-wrap: wrap; align-items: end; }
+.formulario.en-linea > input { flex: 1 1 200px; }
+label { display: grid; gap: 6px; font-weight: 600; font-size: 0.9rem; }
+input, select {
+  font: inherit;
+  padding: 10px 14px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo);
+  color: var(--oscuro);
+  min-width: 0;
+}
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--naranja); outline-offset: 2px; }
+
+.boton {
+  font: inherit;
+  font-weight: 600;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 24px;
+  background: var(--naranja);
+  color: var(--blanco);
+  cursor: pointer;
+  justify-self: start;
+}
+.boton:hover:not(:disabled) { background: var(--naranja-claro); }
+.boton:disabled { opacity: 0.5; cursor: default; }
+
+progress { appearance: none; width: 100%; height: 8px; margin-top: 12px; border: none; border-radius: 999px; overflow: hidden; background: var(--beige); }
+progress::-webkit-progress-bar { background: var(--beige); }
+progress::-webkit-progress-value { background: var(--naranja); border-radius: 999px; }
+progress::-moz-progress-bar { background: var(--naranja); border-radius: 999px; }
+
+.mensaje-error { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; background: #fdecea; color: var(--rojo); }
+
+.importacion header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
+.importacion header code { overflow-wrap: anywhere; }
+
+.datos, .cifras { display: grid; gap: 12px; margin: 0; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.cifras { margin-top: 16px; padding: 16px; border-radius: 12px; background: var(--fondo); }
+dt { font-size: 0.8rem; color: var(--gris); }
+dd { margin: 2px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+
+.insignia { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; background: var(--beige); }
+.estado-subiendo { background: var(--rosa); }
+.estado-pendiente { background: var(--amarillo); }
+.estado-procesando { background: var(--naranja-claro); color: var(--blanco); }
+.estado-completada { background: var(--lima); }
+.estado-fallida { background: var(--rojo); color: var(--blanco); }
+.situacion-1, .situacion-11 { background: var(--lima); }
+.situacion-2, .situacion-21, .situacion-22, .situacion-23 { background: var(--amarillo); }
+.situacion-3 { background: var(--naranja-claro); color: var(--blanco); }
+.situacion-4 { background: var(--naranja); color: var(--blanco); }
+.situacion-5 { background: var(--rojo); color: var(--blanco); }
+
+.tabla-contenedor { overflow-x: auto; margin-top: 16px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--beige); }
+th { font-size: 0.8rem; color: var(--gris); font-weight: 600; }
+.numero { text-align: right; font-variant-numeric: tabular-nums; }

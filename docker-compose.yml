@@ -1,3 +1,4 @@
+# Las credenciales salen solo del .env (no se versiona): copiá .env.example como .env antes de levantar.
 name: padron-deudores
 
 services:
@@ -5,10 +6,10 @@ services:
     image: postgres:17.11
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-padron}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DB_IMPORTADOR_PASSWORD: ${DB_IMPORTADOR_PASSWORD:-importador}
-      DB_CONSULTA_PASSWORD: ${DB_CONSULTA_PASSWORD:-consulta}
+      POSTGRES_USER: ${POSTGRES_USER:?Falta POSTGRES_USER en el .env (copiá .env.example como .env)}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en el .env (copiá .env.example como .env)}
+      DB_IMPORTADOR_PASSWORD: ${DB_IMPORTADOR_PASSWORD:?Falta DB_IMPORTADOR_PASSWORD en el .env (copiá .env.example como .env)}
+      DB_CONSULTA_PASSWORD: ${DB_CONSULTA_PASSWORD:?Falta DB_CONSULTA_PASSWORD en el .env (copiá .env.example como .env)}
     # Puertos publicados solo en esta máquina (127.0.0.1). Para abrirlos a la red, PUERTOS_IP=0.0.0.0 en .env.
     ports:
       - "${PUERTOS_IP:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
@@ -47,7 +48,7 @@ services:
     # Un PID 1 mínimo (tini) en cada servicio .NET: reenvía las señales y deja terminar al proceso si se cae.
     init: true
     environment:
-      ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:-importador}"
+      ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:?Falta DB_IMPORTADOR_PASSWORD en el .env (copiá .env.example como .env)}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,12 +59,12 @@ services:
       dockerfile: src/PadronDeudores.Importador.Api/Dockerfile
     init: true
     environment:
-      ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:-importador}"
+      ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:?Falta DB_IMPORTADOR_PASSWORD en el .env (copiá .env.example como .env)}"
       Aws__ServiceUrl: "http://localstack:4566"
       Aws__Region: ${AWS_REGION:-us-east-1}
       Aws__ColaImportaciones: ${SQS_COLA:-importaciones}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?Falta AWS_ACCESS_KEY_ID en el .env (copiá .env.example como .env)}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?Falta AWS_SECRET_ACCESS_KEY en el .env (copiá .env.example como .env)}
       Importacion__BucketArchivos: ${S3_BUCKET:-padron-archivos}
       Importacion__TamanioMaximoUploadMiB: ${UPLOAD_MAXIMO_MIB:-8192}
     volumes:
@@ -87,12 +88,12 @@ services:
       dockerfile: src/PadronDeudores.Importador.Worker/Dockerfile
     init: true
     environment:
-      ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:-importador}"
+      ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:?Falta DB_IMPORTADOR_PASSWORD en el .env (copiá .env.example como .env)}"
       Aws__ServiceUrl: "http://localstack:4566"
       Aws__Region: ${AWS_REGION:-us-east-1}
       Aws__ColaImportaciones: ${SQS_COLA:-importaciones}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?Falta AWS_ACCESS_KEY_ID en el .env (copiá .env.example como .env)}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?Falta AWS_SECRET_ACCESS_KEY en el .env (copiá .env.example como .env)}
       Aws__IntentosMaximos: ${SQS_MAX_INTENTOS:-3}
       Importacion__BucketArchivos: ${S3_BUCKET:-padron-archivos}
       Webhook__Url: ${WEBHOOK_URL:-http://webhook-receptor:8080/importaciones}
@@ -112,7 +113,7 @@ services:
       dockerfile: src/PadronDeudores.Consulta.Api/Dockerfile
     init: true
     environment:
-      ConnectionStrings__Consulta: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=consulta;Password=${DB_CONSULTA_PASSWORD:-consulta}"
+      ConnectionStrings__Consulta: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=consulta;Password=${DB_CONSULTA_PASSWORD:?Falta DB_CONSULTA_PASSWORD en el .env (copiá .env.example como .env)}"
       Consulta__TopMaximo: ${TOP_MAXIMO:-1000}
     ports:
       - "${PUERTOS_IP:-127.0.0.1}:${CONSULTA_API_PORT:-5002}:8080"
@@ -121,6 +122,22 @@ services:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    build:
+      context: frontend
+    ports:
+      - "${PUERTOS_IP:-127.0.0.1}:${FRONTEND_PORT:-5003}:8080"
+    depends_on:
+      importador-api:
+        condition: service_healthy
+      consulta-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
       interval: 10s
       timeout: 3s
       retries: 5
