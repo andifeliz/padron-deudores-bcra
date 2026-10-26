@@ -2,21 +2,21 @@
 
 Microservicios .NET 10 que importan el padrón de deudores del sistema financiero del BCRA (`deudores.txt`, ~5,9 GB y 34 millones de líneas), calculan los datos por deudor y por entidad, avisan cuando terminan y permiten consultarlo por API o desde un panel web.
 
+**Documentación complementaria:** [Arquitectura](docs/arquitectura.md) (cómo está armado) · [Decisiones](docs/adr/README.md) (por qué está hecho así: cada decisión, con las alternativas descartadas)
+
 ## Contenido
 
 1. [Qué hace](#1-qué-hace)
-2. [Estructura del repositorio](#2-estructura-del-repositorio)
-3. [Requisitos previos](#3-requisitos-previos)
-4. [Puesta en marcha](#4-puesta-en-marcha)
-5. [Uso con el panel web](#5-uso-con-el-panel-web)
-6. [Problemas frecuentes](#6-problemas-frecuentes)
-7. [API](#7-api)
-8. [Ver qué pasa por dentro](#8-ver-qué-pasa-por-dentro)
+2. [Quick start](#2-quick-start)
+3. [Uso con el panel web](#3-uso-con-el-panel-web)
+4. [Problemas frecuentes](#4-problemas-frecuentes)
+5. [Uso con la API](#5-uso-con-la-api)
+6. [Tests](#6-tests)
+7. [Monitoreo](#7-monitoreo)
+8. [Reglas de negocio](#8-reglas-de-negocio)
 9. [Configuración](#9-configuración)
-10. [Tests](#10-tests)
-11. [Reglas de negocio](#11-reglas-de-negocio)
-12. [Límites conocidos](#12-límites-conocidos)
-13. [Arquitectura y decisiones](#13-arquitectura-y-decisiones)
+10. [Estructura del repositorio](#10-estructura-del-repositorio)
+11. [Límites conocidos](#11-límites-conocidos)
 
 ---
 
@@ -63,33 +63,17 @@ La importación es **asíncrona**: la API responde enseguida (`202 Accepted`) y 
 
 ---
 
-## 2. Estructura del repositorio
+## 2. Quick start
 
-```
-src/
-  PadronDeudores.Dominio            Reglas de negocio: formato de línea, situaciones y niveles de riesgo
-  PadronDeudores.Infraestructura    PostgreSQL, S3, SQS, lectura del archivo y logs
-  PadronDeudores.Migraciones        Scripts SQL versionados (DbUp)
-  PadronDeudores.Importador.Api     POST /importaciones, POST /upload, GET /importaciones/{id}
-  PadronDeudores.Importador.Worker  Consumidor de la cola y procesamiento
-  PadronDeudores.Consulta.Api       GET /deudores, /entidades, /deudores/top
-frontend/                           Panel web (React + Vite, servido por nginx)
-tests/                              Tests de dominio y de integración
-docker/                             Scripts de inicio de PostgreSQL y LocalStack
-data/                               Archivos a importar por ruta local (no se versionan)
-```
+Lo necesario para levantar el sistema y hacer una primera importación.
 
----
-
-## 3. Requisitos previos
+### 2.1. Requisitos previos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (o Docker Engine con Compose v2), con **8 GB de memoria** asignados a Docker.
 - Para correr los tests: el [SDK de .NET 10](https://dotnet.microsoft.com/download/dotnet/10.0) y, para los del panel, [Node.js 22](https://nodejs.org/).
 - Para importar el archivo real: el `deudores.txt` de la Central de Deudores del BCRA (no se incluye en el repo). Para probar sin él, el repo trae una muestra de 5 líneas.
 
----
-
-## 4. Puesta en marcha
+### 2.2. Puesta en marcha
 
 ```bash
 git clone https://github.com/andifeliz/padron-deudores-bcra.git
@@ -126,17 +110,23 @@ cp tests/PadronDeudores.IntegracionTests/Muestras/deudores-muestra.txt data/
 
 Para el archivo real, copiá tu `deudores.txt` en `data/`.
 
-Para apagar el sistema:
+Para apagar el sistema **conservando la base de datos** (al volver a levantar, siguen estando los datos importados):
 
 ```bash
 docker compose down
 ```
 
-Apaga y borra los contenedores, pero **conserva la base de datos**: al volver a levantar, siguen estando los datos importados. Para empezar de cero, `docker compose down -v` también borra la base, y después hay que volver a importar. Los archivos subidos a S3 se pierden en los dos casos, porque LocalStack no los guarda en disco.
+Para **empezar de cero**, borrando también la base (después hay que volver a importar):
+
+```bash
+docker compose down -v
+```
+
+En los dos casos se pierden los archivos subidos a S3, porque LocalStack no los guarda en disco.
 
 ---
 
-## 5. Uso con el panel web
+## 3. Uso con el panel web
 
 Abrí **http://localhost:5003**. Arriba se ve si cada API está en línea.
 
@@ -146,11 +136,11 @@ Abrí **http://localhost:5003**. Arriba se ve si cada API está en línea.
 | **Importaciones** | Seguí el estado de cada importación (subiendo → pendiente → procesando → completada o fallida) y su resumen al terminar. Podés buscar una por su id; con **Ver todas** volvés a la lista completa |
 | **Consultas**     | Buscá un deudor o una entidad, y mirá el top de deudores con filtro por situación. Los montos se muestran en pesos                                                                                |
 
-**Para el archivo real, usá "Desde la carpeta de datos".** Si lo subís, se guarda una copia de 5,9 GB en LocalStack (el S3 que corre en tu máquina), que puede quedarse sin memoria y fallar (ver [Problemas frecuentes](#6-problemas-frecuentes)).
+**Para el archivo real, usá "Desde la carpeta de datos".** Si lo subís, se guarda una copia de 5,9 GB en LocalStack (el S3 que corre en tu máquina), que puede quedarse sin memoria y fallar (ver [Problemas frecuentes](#4-problemas-frecuentes)).
 
 ---
 
-## 6. Problemas frecuentes
+## 4. Problemas frecuentes
 
 | Qué ves                                                                                                                        | Por qué pasa                                                                                                                                                    | Cómo se soluciona                                                                                                                                                                                                                 |
 | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -164,7 +154,7 @@ Abrí **http://localhost:5003**. Arriba se ve si cada API está en línea.
 
 ---
 
-## 7. API
+## 5. Uso con la API
 
 Hay dos APIs: la **Importador API** (`localhost:5001`) recibe y sigue las importaciones, y la **Consulta API** (`localhost:5002`) consulta los resultados.
 
@@ -181,9 +171,9 @@ Hay dos APIs: la **Importador API** (`localhost:5001`) recibe y sigue las import
 - Los errores siguen el formato estándar [Problem Details (RFC 9457)](https://www.rfc-editor.org/rfc/rfc9457), con un mensaje que explica qué pasó.
 - Cada API tiene su documentación interactiva (OpenAPI), con un botón para probar cada endpoint desde el navegador: http://localhost:5001/scalar y http://localhost:5002/scalar.
 
-### 7.1. Importar desde la carpeta de datos · `POST /importaciones`
+### 5.1. Importar desde la carpeta de datos · `POST /importaciones`
 
-Importa un archivo que ya está en la carpeta `data/` del proyecto (ver [Puesta en marcha](#4-puesta-en-marcha)): le pasás **solo su nombre**, y la API lo lee de ahí. No hace copias del archivo, así que es la opción para el archivo real.
+Importa un archivo que ya está en la carpeta `data/` del proyecto (ver [Puesta en marcha](#22-puesta-en-marcha)): le pasás **solo su nombre**, y la API lo lee de ahí. No hace copias del archivo, así que es la opción para el archivo real.
 
 **Recibe:** `{"archivo": "<nombre del archivo>"}`. Solo el nombre, sin carpetas.
 
@@ -200,11 +190,11 @@ Location: /importaciones/01a17652-ddf3-773d-9389-35afec4895cb        ← la dire
 {"id":"01a17652-ddf3-773d-9389-35afec4895cb","estado":"pendiente"}   ← el id de tu importación
 ```
 
-El procesamiento sigue en segundo plano; su estado se consulta con el id (ver [7.3](#73-seguir-una-importación--get-importacionesid)).
+El procesamiento sigue en segundo plano; su estado se consulta con el id (ver [5.3](#53-seguir-una-importación--get-importacionesid)).
 
 **Errores:** `400` si el nombre incluye carpetas · `404` si el archivo no está en `data/`.
 
-### 7.2. Subir un archivo e importarlo · `POST /upload`
+### 5.2. Subir un archivo e importarlo · `POST /upload`
 
 Recibe **el archivo entero** dentro del pedido, desde cualquier carpeta de tu computadora. La API lo guarda en S3 y lo importa desde ahí. Es la opción cuando el archivo no está en la carpeta de datos del servidor.
 
@@ -214,11 +204,11 @@ Recibe **el archivo entero** dentro del pedido, desde cualquier carpeta de tu co
 curl -i -X POST "localhost:5001/upload?nombre=deudores-muestra.txt" -H "Content-Type: application/octet-stream" --data-binary @data/deudores-muestra.txt
 ```
 
-**Responde** cuando el archivo terminó de subir (con uno grande puede tardar unos minutos), igual que la importación por ruta (ver [7.1](#71-importar-desde-la-carpeta-de-datos--post-importaciones)): `202 Accepted`, con el id y la dirección para seguir el estado. El procesamiento sigue en segundo plano.
+**Responde** cuando el archivo terminó de subir (con uno grande puede tardar unos minutos), igual que la importación por ruta (ver [5.1](#51-importar-desde-la-carpeta-de-datos--post-importaciones)): `202 Accepted`, con el id y la dirección para seguir el estado. El procesamiento sigue en segundo plano.
 
 **Errores:** `400` si el archivo está vacío o el nombre incluye carpetas · `413` si supera el tamaño máximo.
 
-### 7.3. Seguir una importación · `GET /importaciones/{id}`
+### 5.3. Seguir una importación · `GET /importaciones/{id}`
 
 Devuelve el estado de una importación y, cuando termina, su resumen. El estado pasa por `pendiente` → `procesando` → `completada` (o `fallida`, con el motivo en `error`).
 
@@ -262,7 +252,7 @@ curl -s localhost:5001/importaciones/01a17652-ddf3-773d-9389-35afec4895cb
 
 **Errores:** `404` si la importación no existe.
 
-### 7.4. Consultar un deudor · `GET /deudores/{cuit}`
+### 5.4. Consultar un deudor · `GET /deudores/{cuit}`
 
 Devuelve la situación máxima y la suma de préstamos de un deudor.
 
@@ -280,7 +270,7 @@ curl -s localhost:5002/deudores/20000000004
 
 **Errores:** `400` si la identificación está mal formada · `404` si el deudor no existe.
 
-### 7.5. Consultar una entidad · `GET /entidades/{codigo}`
+### 5.5. Consultar una entidad · `GET /entidades/{codigo}`
 
 Devuelve la suma de préstamos de una entidad.
 
@@ -298,7 +288,7 @@ curl -s localhost:5002/entidades/7
 
 **Errores:** `400` si el código está mal formado · `404` si la entidad no existe.
 
-### 7.6. Mayores deudores · `GET /deudores/top/{n}`
+### 5.6. Mayores deudores · `GET /deudores/top/{n}`
 
 Devuelve los N deudores con mayor suma de préstamos, de mayor a menor. Si dos tienen la misma suma, va primero la identificación más baja.
 
@@ -320,11 +310,43 @@ curl -s "localhost:5002/deudores/top/10?situacion=5"
 
 ---
 
-## 8. Ver qué pasa por dentro
+## 6. Tests
+
+### 6.1. Backend
+
+Prueban las reglas de negocio y el sistema completo. Necesitan el SDK de .NET 10 y Docker corriendo:
+
+```bash
+dotnet test PadronDeudores.sln
+```
+
+| Proyecto                          | Qué prueba                                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `PadronDeudores.Dominio.Tests`    | Reglas de negocio: lectura de cada línea y nivel de riesgo de cada situación                                        |
+| `PadronDeudores.IntegracionTests` | El sistema con un PostgreSQL y un LocalStack reales (Testcontainers): importación, cola, S3, APIs, webhook y Outbox |
+
+Los tests de integración levantan sus propios contenedores de PostgreSQL y LocalStack, separados de los del sistema, así que no tocan tus datos.
+
+### 6.2. Panel web
+
+Revisan el código del panel con ESLint y corren sus tests con Vitest. Necesitan Node.js 22:
+
+```bash
+cd frontend
+npm ci
+npm run lint
+npm test
+```
+
+`npm ci` instala las dependencias del panel (hace falta la primera vez); `npm run lint` revisa el código y `npm test` corre los tests.
+
+---
+
+## 7. Monitoreo
 
 Comandos para mirar qué está haciendo cada parte del sistema: sirven para seguir una importación o para entender un problema.
 
-### 8.1. Logs
+### 7.1. Logs
 
 Los logs son los mensajes que escribe cada servicio mientras trabaja. El más útil es el del **worker**, que es el que procesa las importaciones. Para verlo en vivo (cortá con `Ctrl+C`):
 
@@ -336,7 +358,7 @@ Ahí vas a ver cuándo empieza cada importación, el avance cada 5 millones de l
 
 Para ver los logs de otro servicio, cambiá el nombre; por ejemplo, `docker compose logs -f importador-api`.
 
-### 8.2. Base de datos
+### 7.2. Base de datos
 
 La base PostgreSQL guarda los pedidos de importación y los resultados. Para consultarla desde la terminal:
 
@@ -356,7 +378,7 @@ También podés usar un programa gráfico (DBeaver, TablePlus o pgAdmin) o, desd
 | `entidades`     | Por entidad: suma total de préstamos                                          |
 | `staging`       | Tabla de trabajo del worker durante una importación (queda vacía al terminar) |
 
-### 8.3. Cola de mensajes (SQS)
+### 7.3. Cola de mensajes (SQS)
 
 La API deja en esta cola un mensaje por cada importación pedida, y el worker los va tomando. Para ver cuántos mensajes hay:
 
@@ -366,7 +388,7 @@ docker compose exec localstack awslocal sqs get-queue-attributes --queue-url htt
 
 `ApproximateNumberOfMessages` son los que esperan que el worker los tome, y `ApproximateNumberOfMessagesNotVisible`, los que el worker está procesando. Con todo terminado, los dos están en `0`. Un mensaje que falla 3 veces pasa a otra cola, `importaciones-fallidas`, para revisarlo aparte.
 
-### 8.4. Archivos subidos (S3)
+### 7.4. Archivos subidos (S3)
 
 Los archivos que se suben (por el panel o por `POST /upload`) quedan guardados en S3. Para verlos:
 
@@ -376,7 +398,7 @@ docker compose exec localstack awslocal s3 ls s3://padron-archivos --recursive
 
 Muestra cada archivo con su fecha y tamaño, dentro de una carpeta con el id de su importación. Si todavía no subiste ninguno, no muestra nada.
 
-### 8.5. Avisos del webhook
+### 7.5. Avisos del webhook
 
 Cada vez que termina una importación, el worker envía un aviso al `webhook-receptor`, que lo muestra en su log. Para ver los avisos que llegaron:
 
@@ -386,7 +408,7 @@ docker compose logs webhook-receptor
 
 Cada aviso aparece con el estado (`completada` o `fallida`) y el resumen de la importación.
 
-### 8.6. Salud de los servicios
+### 7.6. Salud de los servicios
 
 Cada API tiene un chequeo de salud: una dirección que responde si está funcionando.
 
@@ -396,6 +418,17 @@ curl -s localhost:5002/health/ready
 ```
 
 Si todo está bien, responden `Healthy`. Hay dos chequeos: `/health/live` indica si la API está prendida, y `/health/ready`, si además puede usar la base de datos.
+
+---
+
+## 8. Reglas de negocio
+
+- **Situación máxima por riesgo, no por número.** Los códigos del BCRA no están ordenados por gravedad: el 11 equivale a 1 y el 21, 22 y 23 equivalen a 2. Se elige la situación de mayor riesgo y se guarda su **código original**. Por ejemplo, un deudor con situaciones 2 y 11 queda con situación máxima 2, porque el 11 equivale a 1. El 99 (no clasificado) tiene el menor riesgo. Un código desconocido no compite y se informa en el resumen.
+- **Montos en miles de pesos**, con un decimal, como en la fuente. Por ejemplo, `261.0` son \$ 261.000 y `0.5` son \$ 500. El panel web ya los muestra convertidos a pesos.
+- **Cada importación reemplaza los datos de deudores y entidades** del archivo anterior por completo, en una transacción: quien consulta ve los datos viejos o los nuevos, nunca una mezcla. Reimportar el mismo archivo deja el mismo resultado.
+- **Se procesan todas las líneas**, aunque traigan distintos períodos; el resumen informa cuántas hay de cada uno.
+- **Las líneas con formato inválido se descartan** y se cuentan en el resumen.
+- **Ningún pedido se pierde ni se procesa dos veces.** Si la cola no responde, el pedido queda guardado y se envía cuando vuelve (patrón Outbox). Si el mismo mensaje de la cola llega dos veces, el worker no vuelve a procesar una importación ya completada.
 
 ---
 
@@ -417,50 +450,25 @@ Después de cambiar el `.env`, aplicá el cambio con `docker compose up -d`: vue
 
 ---
 
-## 10. Tests
+## 10. Estructura del repositorio
 
-### 10.1. Backend
-
-Prueban las reglas de negocio y el sistema completo. Necesitan el SDK de .NET 10 y Docker corriendo:
-
-```bash
-dotnet test PadronDeudores.sln
 ```
-
-| Proyecto                          | Qué prueba                                                                                                          |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `PadronDeudores.Dominio.Tests`    | Reglas de negocio: lectura de cada línea y nivel de riesgo de cada situación                                        |
-| `PadronDeudores.IntegracionTests` | El sistema con un PostgreSQL y un LocalStack reales (Testcontainers): importación, cola, S3, APIs, webhook y Outbox |
-
-Los tests de integración levantan sus propios contenedores de PostgreSQL y LocalStack, separados de los del sistema, así que no tocan tus datos.
-
-### 10.2. Panel web
-
-Revisan el código del panel con ESLint y corren sus tests con Vitest. Necesitan Node.js 22:
-
-```bash
-cd frontend
-npm ci
-npm run lint
-npm test
+src/
+  PadronDeudores.Dominio            Reglas de negocio: formato de línea, situaciones y niveles de riesgo
+  PadronDeudores.Infraestructura    PostgreSQL, S3, SQS, lectura del archivo y logs
+  PadronDeudores.Migraciones        Scripts SQL versionados (DbUp)
+  PadronDeudores.Importador.Api     POST /importaciones, POST /upload, GET /importaciones/{id}
+  PadronDeudores.Importador.Worker  Consumidor de la cola y procesamiento
+  PadronDeudores.Consulta.Api       GET /deudores, /entidades, /deudores/top
+frontend/                           Panel web (React + Vite, servido por nginx)
+tests/                              Tests de dominio y de integración
+docker/                             Scripts de inicio de PostgreSQL y LocalStack
+data/                               Archivos a importar por ruta local (no se versionan)
 ```
-
-`npm ci` instala las dependencias del panel (hace falta la primera vez); `npm run lint` revisa el código y `npm test` corre los tests.
 
 ---
 
-## 11. Reglas de negocio
-
-- **Situación máxima por riesgo, no por número.** Los códigos del BCRA no están ordenados por gravedad: el 11 equivale a 1 y el 21, 22 y 23 equivalen a 2. Se elige la situación de mayor riesgo y se guarda su **código original**. Por ejemplo, un deudor con situaciones 2 y 11 queda con situación máxima 2, porque el 11 equivale a 1. El 99 (no clasificado) tiene el menor riesgo. Un código desconocido no compite y se informa en el resumen.
-- **Montos en miles de pesos**, con un decimal, como en la fuente. Por ejemplo, `261.0` son \$ 261.000 y `0.5` son \$ 500. El panel web ya los muestra convertidos a pesos.
-- **Cada importación reemplaza los datos de deudores y entidades** del archivo anterior por completo, en una transacción: quien consulta ve los datos viejos o los nuevos, nunca una mezcla. Reimportar el mismo archivo deja el mismo resultado.
-- **Se procesan todas las líneas**, aunque traigan distintos períodos; el resumen informa cuántas hay de cada uno.
-- **Las líneas con formato inválido se descartan** y se cuentan en el resumen.
-- **Ningún pedido se pierde ni se procesa dos veces.** Si la cola no responde, el pedido queda guardado y se envía cuando vuelve (patrón Outbox). Si el mismo mensaje de la cola llega dos veces, el worker no vuelve a procesar una importación ya completada.
-
----
-
-## 12. Límites conocidos
+## 11. Límites conocidos
 
 | Límite                                                                                    | En producción se resolvería con                                          |
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -470,13 +478,3 @@ npm test
 | No hay un umbral de líneas inválidas: un archivo con muchas líneas rotas se importa igual | Rechazar la importación si superan un porcentaje                         |
 | Los archivos subidos quedan guardados en S3 para siempre                                  | Una regla de vencimiento de S3 que los archive o borre después de N días |
 | LocalStack (S3 local) no soporta archivos de varios GB por memoria                        | S3 real, que admite archivos de hasta 5 TB                               |
-
----
-
-## 13. Arquitectura y decisiones
-
-**Cómo está armado el sistema:** los servicios, cómo se conectan, quién escribe cada tabla, la estructura del código y las elecciones técnicas están en [docs/arquitectura.md](docs/arquitectura.md).
-
-**Por qué está hecho así:** cada decisión importante (la base de datos, la cola, cómo se calcula la situación máxima, qué pasa al reimportar…) está explicada en un documento corto, con las alternativas que se descartaron y lo que implica.
-
-El índice, agrupado por tema, está en [docs/adr](docs/adr/README.md).
