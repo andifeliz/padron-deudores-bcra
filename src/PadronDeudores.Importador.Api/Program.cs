@@ -34,6 +34,9 @@ builder.Services.AddHealthChecks().AddCheck<ChequeoBaseDeDatos>("base-de-datos",
 
 var app = builder.Build();
 
+// Los errores sin cuerpo (ruta inexistente, parámetro con formato inválido) también salen como Problem Details.
+app.UseStatusCodePages();
+
 // live: el proceso responde (no revisa dependencias). ready: además, la base responde.
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = chequeo => chequeo.Tags.Contains(Listo) });

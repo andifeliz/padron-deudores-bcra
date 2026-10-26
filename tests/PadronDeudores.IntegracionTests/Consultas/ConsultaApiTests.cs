@@ -127,6 +127,18 @@ public class ConsultaApiTests(EntornoFixture fixture) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
     }
 
+    // Errores que genera el framework, no nuestros endpoints: también tienen que explicar qué pasó.
+    [Theory]
+    [InlineData("/deudores/top/abc", HttpStatusCode.BadRequest)]
+    [InlineData("/ruta-inexistente", HttpStatusCode.NotFound)]
+    public async Task Get_ErrorDelFramework_DevuelveProblemDetails(string ruta, HttpStatusCode esperado)
+    {
+        var respuesta = await _api.CreateClient().GetAsync(ruta);
+
+        Assert.Equal(esperado, respuesta.StatusCode);
+        Assert.Equal("application/problem+json", respuesta.Content.Headers.ContentType?.MediaType);
+    }
+
     [Fact]
     public async Task Health_ConLaBaseDisponible_LiveYReadyResponden200()
     {

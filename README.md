@@ -227,6 +227,7 @@ curl -s localhost:5001/importaciones/01a17652-ddf3-773d-9389-35afec4895cb
   "iniciadaEn": "2026-10-26T03:48:24.713164Z",
   "finalizadaEn": "2026-10-26T03:48:24.726294Z",
   "resumen": {
+    "importacionId": "01a17652-ddf3-773d-9389-35afec4895cb",
     "lineasLeidas": 5,
     "lineasInvalidas": 1,
     "deudores": 4,
