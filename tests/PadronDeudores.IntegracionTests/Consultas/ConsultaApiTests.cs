@@ -59,6 +59,34 @@ public class ConsultaApiTests(EntornoFixture fixture) : IAsyncLifetime
         Assert.Equal(esperados.Split(','), top!.Select(d => d.GetProperty("nroIdentificacion").GetString()));
     }
 
+    [Theory]
+    [InlineData("situacion=5", "20000000004,20000000002")]
+    [InlineData("situacion=1", "00007CN0001,20000000001")]
+    [InlineData("situacion=21", "")]
+    public async Task GetTop_FiltradoPorSituacion_DevuelveSoloEseCodigo(string filtro, string esperados)
+    {
+        var top = await _api.CreateClient().GetFromJsonAsync<JsonElement[]>($"/deudores/top/10?{filtro}");
+
+        Assert.Equal(esperados.Split(',', StringSplitOptions.RemoveEmptyEntries), top!.Select(d => d.GetProperty("nroIdentificacion").GetString()));
+    }
+
+    [Fact]
+    public async Task GetTop_FiltradoPorSituacion_EsPorCodigoExacto()
+    {
+        // Un deudor en situación 11: no tiene que aparecer al pedir la 1.
+        await using (var once = fixture.BaseDeDatos.CreateCommand("INSERT INTO deudores VALUES ('20000000011', 11, 900)"))
+        {
+            await once.ExecuteNonQueryAsync();
+        }
+
+        var cliente = _api.CreateClient();
+        var situacionUno = await cliente.GetFromJsonAsync<JsonElement[]>("/deudores/top/10?situacion=1");
+        var situacionOnce = await cliente.GetFromJsonAsync<JsonElement[]>("/deudores/top/10?situacion=11");
+
+        Assert.DoesNotContain(situacionUno!, d => d.GetProperty("nroIdentificacion").GetString() == "20000000011");
+        Assert.Equal(["20000000011"], situacionOnce!.Select(d => d.GetProperty("nroIdentificacion").GetString()));
+    }
+
     [Fact]
     public async Task GetTop_EmpateEnLaSuma_OrdenaPorIdentificacion()
     {
@@ -90,6 +118,8 @@ public class ConsultaApiTests(EntornoFixture fixture) : IAsyncLifetime
     [InlineData("/entidades/123456")]
     [InlineData("/deudores/top/0")]
     [InlineData("/deudores/top/1001")]
+    [InlineData("/deudores/top/10?situacion=7")]
+    [InlineData("/deudores/top/10?situacion=1&situacion=5")]
     public async Task Get_ParametroMalFormado_Devuelve400(string ruta)
     {
         var respuesta = await _api.CreateClient().GetAsync(ruta);

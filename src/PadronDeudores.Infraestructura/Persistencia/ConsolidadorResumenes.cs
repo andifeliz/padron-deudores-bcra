@@ -29,6 +29,7 @@ public sealed class ConsolidadorResumenes
         ALTER TABLE deudores_nueva ADD CONSTRAINT deudores_nueva_pkey PRIMARY KEY (nro_identificacion);
         ALTER TABLE entidades_nueva ADD CONSTRAINT entidades_nueva_pkey PRIMARY KEY (codigo_entidad);
         CREATE INDEX ix_deudores_nueva_top ON deudores_nueva (suma_total_prestamos DESC, nro_identificacion);
+        CREATE INDEX ix_deudores_nueva_situacion_top ON deudores_nueva (situacion_maxima, suma_total_prestamos DESC, nro_identificacion);
         GRANT SELECT ON deudores_nueva, entidades_nueva TO consulta;
         ANALYZE deudores_nueva, entidades_nueva;
 
@@ -39,6 +40,7 @@ public sealed class ConsolidadorResumenes
         ALTER INDEX deudores_nueva_pkey RENAME TO deudores_pkey;
         ALTER INDEX entidades_nueva_pkey RENAME TO entidades_pkey;
         ALTER INDEX ix_deudores_nueva_top RENAME TO ix_deudores_top;
+        ALTER INDEX ix_deudores_nueva_situacion_top RENAME TO ix_deudores_situacion_top;
         """;
 
     public async Task ReemplazarAsync(NpgsqlConnection conexion, NpgsqlTransaction transaccion, CancellationToken ct)
