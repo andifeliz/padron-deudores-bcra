@@ -3,12 +3,13 @@ using System.Text.Json;
 using Dapper;
 using Npgsql;
 using PadronDeudores.Dominio;
+using PadronDeudores.Importador.Worker.Notificaciones;
 using PadronDeudores.Infraestructura.Archivos;
 using PadronDeudores.Infraestructura.Persistencia;
 
 namespace PadronDeudores.Importador.Worker.Procesamiento;
 
-// Coordina una importación: lock, estado, lectura, carga en staging, reemplazo de resúmenes y resumen final.
+// Coordina una importación: lock, estado, lectura, carga en staging, reemplazo de resúmenes, resumen final y aviso de éxito.
 public sealed class ProcesadorImportacion(
     NpgsqlDataSource baseDeDatos,
     IOrigenArchivo origen,
@@ -16,6 +17,7 @@ public sealed class ProcesadorImportacion(
     CargadorStaging cargador,
     ConsolidadorResumenes consolidador,
     RepositorioImportaciones importaciones,
+    INotificador notificador,
     ILogger<ProcesadorImportacion> logger)
 {
     // Una sola importación a la vez, aunque haya varios workers. PostgreSQL libera el lock si el worker se cae.
@@ -84,6 +86,7 @@ public sealed class ProcesadorImportacion(
         await transaccion.CommitAsync(ct);
 
         logger.LogInformation("Importación {ImportacionId} completada {@Resumen}", id, resumen);
+        await notificador.NotificarAsync(NotificacionImportacion.Completada(archivo, resumen), ct);
         return resumen;
     }
 

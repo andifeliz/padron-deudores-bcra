@@ -15,4 +15,9 @@ public sealed class OpcionesAws
 
     [Required]
     public string ColaImportaciones { get; init; } = "";
+
+    // Veces que SQS entrega un mensaje antes de pasarlo a la cola de fallidos (maxReceiveCount).
+    // En Docker sale de SQS_MAX_INTENTOS, la misma variable con la que se crea la cola.
+    [Range(1, 1000)]
+    public int IntentosMaximos { get; init; } = 3;
 }

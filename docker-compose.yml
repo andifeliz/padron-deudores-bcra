@@ -28,6 +28,7 @@ services:
       S3_BUCKET: ${S3_BUCKET:-padron-archivos}
       SQS_COLA: ${SQS_COLA:-importaciones}
       SQS_COLA_FALLIDOS: ${SQS_COLA_FALLIDOS:-importaciones-fallidas}
+      SQS_MAX_INTENTOS: ${SQS_MAX_INTENTOS:-3}
     ports:
       - "${LOCALSTACK_PORT:-4566}:4566"
     volumes:
@@ -85,6 +86,8 @@ services:
       Aws__ColaImportaciones: ${SQS_COLA:-importaciones}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      Aws__IntentosMaximos: ${SQS_MAX_INTENTOS:-3}
+      Webhook__Url: ${WEBHOOK_URL:-http://webhook-receptor:8080/importaciones}
     volumes:
       - ./data:/data:ro
     depends_on:
@@ -92,6 +95,8 @@ services:
         condition: service_completed_successfully
       localstack:
         condition: service_healthy
+      webhook-receptor:
+        condition: service_started
 
   consulta-api:
     build:

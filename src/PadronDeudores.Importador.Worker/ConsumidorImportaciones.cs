@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using PadronDeudores.Importador.Worker.Notificaciones;
 using PadronDeudores.Importador.Worker.Procesamiento;
 using PadronDeudores.Infraestructura.Mensajeria;
 
@@ -7,6 +9,8 @@ namespace PadronDeudores.Importador.Worker;
 public sealed class ConsumidorImportaciones(
     ColaImportaciones cola,
     ProcesadorImportacion procesador,
+    INotificador notificador,
+    IOptions<OpcionesAws> opciones,
     ILogger<ConsumidorImportaciones> logger) : BackgroundService
 {
     // Mientras se procesa, se renueva el ocultamiento del mensaje para que otro worker no lo tome.
@@ -68,7 +72,7 @@ public sealed class ConsumidorImportaciones(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning("Importación {ImportacionId}: falló el intento {Intento}, SQS la reintentará", mensaje.ImportacionId, recibido.Intento);
+            await InformarFallaAsync(mensaje, recibido.Intento, ex.Message);
         }
         finally
         {
@@ -76,6 +80,19 @@ public sealed class ConsumidorImportaciones(
             reloj.Dispose();
             await renovacion;
         }
+    }
+
+    // Solo se avisa "fallida" cuando no quedan reintentos: un intento intermedio puede salir bien después.
+    private async Task InformarFallaAsync(MensajeImportacion mensaje, int intento, string error)
+    {
+        if (intento < opciones.Value.IntentosMaximos)
+        {
+            logger.LogWarning("Importación {ImportacionId}: falló el intento {Intento}, SQS la reintentará", mensaje.ImportacionId, intento);
+            return;
+        }
+
+        logger.LogError("Importación {ImportacionId}: falló el último intento ({Intento}), pasa a la cola de fallidos", mensaje.ImportacionId, intento);
+        await notificador.NotificarAsync(NotificacionImportacion.Fallida(mensaje.ImportacionId, mensaje.Archivo, error), CancellationToken.None);
     }
 
     private async Task RenovarVisibilidadAsync(PeriodicTimer reloj, string recibo, CancellationToken ct)

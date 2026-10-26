@@ -3,9 +3,11 @@ using Amazon.SQS;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using PadronDeudores.Dominio;
+using PadronDeudores.Importador.Worker.Notificaciones;
 using PadronDeudores.Importador.Worker.Procesamiento;
 using PadronDeudores.Infraestructura.Archivos;
 using PadronDeudores.Infraestructura.Persistencia;
+using PadronDeudores.IntegracionTests.Notificaciones;
 using PadronDeudores.Migraciones;
 using Testcontainers.LocalStack;
 using Testcontainers.PostgreSql;
@@ -47,13 +49,14 @@ public sealed class EntornoFixture : IAsyncLifetime
         await Sqs.CreateQueueAsync(Cola);
     }
 
-    public ProcesadorImportacion CrearProcesador() => new(
+    public ProcesadorImportacion CrearProcesador(INotificador? notificador = null) => new(
         BaseDeDatos,
         new OrigenDisco(),
         new LectorDeudores(NullLogger<LectorDeudores>.Instance),
         new CargadorStaging(BaseDeDatos),
         new ConsolidadorResumenes(),
         new RepositorioImportaciones(BaseDeDatos),
+        notificador ?? new NotificadorEnMemoria(),
         NullLogger<ProcesadorImportacion>.Instance);
 
     // Lo mismo que hace la API al recibir el pedido: registrarlo como pendiente.

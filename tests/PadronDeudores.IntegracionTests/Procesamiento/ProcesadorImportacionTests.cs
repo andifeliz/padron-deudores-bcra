@@ -1,5 +1,7 @@
 using Dapper;
+using PadronDeudores.Dominio;
 using PadronDeudores.IntegracionTests.Entorno;
+using PadronDeudores.IntegracionTests.Notificaciones;
 
 namespace PadronDeudores.IntegracionTests.Procesamiento;
 
@@ -12,14 +14,30 @@ public class ProcesadorImportacionTests(EntornoFixture fixture)
     public async Task ProcesarAsync_ArchivoReal_CompletaLaImportacionConSuResumen()
     {
         var id = await fixture.RegistrarImportacionAsync(Muestra);
+        var notificador = new NotificadorEnMemoria();
 
-        var resumen = await fixture.CrearProcesador().ProcesarAsync(id, Muestra, CancellationToken.None);
+        var resumen = await fixture.CrearProcesador(notificador).ProcesarAsync(id, Muestra, CancellationToken.None);
 
         Assert.NotNull(resumen);
         Assert.Equal((5L, 1L, 4L, 2L), (resumen.LineasLeidas, resumen.LineasInvalidas, resumen.Deudores, resumen.Entidades));
         Assert.Equal("completada", await ConsultarAsync<string>("SELECT estado FROM importaciones WHERE id = @id", id));
         Assert.Equal(4L, await ConsultarAsync<long>("SELECT count(*) FROM deudores", id));
         Assert.Equal(0L, await ConsultarAsync<long>("SELECT count(*) FROM staging", id));
+        Assert.Equal(EstadoImportacion.Completada, Assert.Single(notificador.Enviadas).Estado);
+    }
+
+    [Fact]
+    public async Task ProcesarAsync_ArchivoInexistente_MarcaFallidaSinAvisar()
+    {
+        var id = await fixture.RegistrarImportacionAsync("no-existe.txt");
+        var notificador = new NotificadorEnMemoria();
+
+        await Assert.ThrowsAsync<FileNotFoundException>(
+            () => fixture.CrearProcesador(notificador).ProcesarAsync(id, "no-existe.txt", CancellationToken.None));
+
+        Assert.Equal("fallida", await ConsultarAsync<string>("SELECT estado FROM importaciones WHERE id = @id", id));
+        // El aviso de falla lo da el consumidor, cuando ya no quedan reintentos.
+        Assert.Empty(notificador.Enviadas);
     }
 
     [Fact]
