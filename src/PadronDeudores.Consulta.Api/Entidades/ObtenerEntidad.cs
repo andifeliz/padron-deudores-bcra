@@ -8,7 +8,13 @@ public static class ObtenerEntidad
     private const int LargoCodigo = 5;
 
     public static void MapObtenerEntidad(this IEndpointRouteBuilder app) =>
-        app.MapGet("/entidades/{codigo}", ManejarAsync);
+        app.MapGet("/entidades/{codigo}", ManejarAsync)
+            .WithTags("Entidades")
+            .WithSummary("Resumen de una entidad")
+            .WithDescription("Suma total de préstamos (en miles de pesos) de una entidad. El código tiene hasta 5 dígitos: 7 y 00007 son la misma entidad.")
+            .Produces<Entidad>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static async Task<IResult> ManejarAsync(string codigo, RepositorioEntidades entidades, CancellationToken ct)
     {

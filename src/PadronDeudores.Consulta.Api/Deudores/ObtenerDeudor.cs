@@ -9,7 +9,13 @@ public static class ObtenerDeudor
     private const int LargoIdentificacion = 11;
 
     public static void MapObtenerDeudor(this IEndpointRouteBuilder app) =>
-        app.MapGet("/deudores/{cuit}", ManejarAsync);
+        app.MapGet("/deudores/{cuit}", ManejarAsync)
+            .WithTags("Deudores")
+            .WithSummary("Resumen de un deudor")
+            .WithDescription("Situación máxima y suma total de préstamos (en miles de pesos) de un deudor. La identificación tiene 11 letras o números: CUIT, CUIL o una identificación del exterior.")
+            .Produces<Deudor>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static async Task<IResult> ManejarAsync(string cuit, RepositorioDeudores deudores, CancellationToken ct)
     {

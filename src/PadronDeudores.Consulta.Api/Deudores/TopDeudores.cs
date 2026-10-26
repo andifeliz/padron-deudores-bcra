@@ -7,7 +7,12 @@ namespace PadronDeudores.Consulta.Api.Deudores;
 public static class TopDeudores
 {
     public static void MapTopDeudores(this IEndpointRouteBuilder app) =>
-        app.MapGet("/deudores/top/{n}", ManejarAsync);
+        app.MapGet("/deudores/top/{n}", ManejarAsync)
+            .WithTags("Deudores")
+            .WithSummary("Los N deudores con mayor suma de préstamos")
+            .WithDescription("Ordenados por suma total de préstamos (en miles de pesos) de mayor a menor; si hay empate, por identificación de menor a mayor. N va de 1 al máximo configurado (1000 por defecto).")
+            .Produces<IReadOnlyList<Deudor>>()
+            .ProducesValidationProblem();
 
     private static async Task<IResult> ManejarAsync(int n, IOptions<OpcionesConsulta> opciones, RepositorioDeudores deudores, CancellationToken ct)
     {

@@ -23,6 +23,6 @@ public sealed class RegistroImportacion(RepositorioImportaciones importaciones, 
         }
 
         logger.LogInformation("Importación {ImportacionId} encolada: {Archivo}", id, archivo);
-        return Results.Accepted($"/importaciones/{id}", new { id, estado = "pendiente" });
+        return Results.Accepted($"/importaciones/{id}", new ImportacionAceptada(id, "pendiente"));
     }
 }

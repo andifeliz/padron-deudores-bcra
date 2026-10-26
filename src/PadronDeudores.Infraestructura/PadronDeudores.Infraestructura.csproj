@@ -4,6 +4,7 @@
     <PackageReference Include="AWSSDK.S3" />
     <PackageReference Include="AWSSDK.SQS" />
     <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />

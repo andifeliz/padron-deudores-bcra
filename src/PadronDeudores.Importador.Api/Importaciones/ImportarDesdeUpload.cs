@@ -12,7 +12,15 @@ public static class ImportarDesdeUpload
     private const string NombrePorDefecto = "deudores.txt";
 
     public static void MapImportarDesdeUpload(this IEndpointRouteBuilder app) =>
-        app.MapPost("/upload", ManejarAsync);
+        app.MapPost("/upload", ManejarAsync)
+            .WithTags("Importaciones")
+            .WithSummary("Subir un archivo e importarlo")
+            .WithDescription("Recibe el archivo en el cuerpo del pedido (application/octet-stream), lo guarda en S3 y encola su importación. El nombre es opcional (por defecto deudores.txt).")
+            .Accepts<byte[]>("application/octet-stream")
+            .Produces<ImportacionAceptada>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
     private static async Task<IResult> ManejarAsync(
         HttpContext http,

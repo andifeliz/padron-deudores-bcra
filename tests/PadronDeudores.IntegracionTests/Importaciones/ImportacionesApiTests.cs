@@ -85,6 +85,17 @@ public class ImportacionesApiTests(EntornoFixture fixture)
         Assert.Equal(esperado, respuesta.StatusCode);
     }
 
+    [Fact]
+    public async Task OpenApi_DocumentaLosEndpoints()
+    {
+        await using var api = CrearApi();
+
+        var documento = await api.CreateClient().GetFromJsonAsync<JsonElement>("/openapi/v1.json");
+        var rutas = documento.GetProperty("paths").EnumerateObject().Select(ruta => ruta.Name);
+
+        Assert.Equal(["/importaciones", "/importaciones/{id}", "/upload"], rutas.Order());
+    }
+
     // La API real, apuntando a la base y a la cola de los contenedores de test.
     private WebApplicationFactory<Program> CrearApi(Action<IWebHostBuilder>? ajustes = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(b =>

@@ -97,4 +97,37 @@ public class ConsultaApiTests(EntornoFixture fixture) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
     }
+
+    [Fact]
+    public async Task Health_ConLaBaseDisponible_LiveYReadyResponden200()
+    {
+        var cliente = _api.CreateClient();
+
+        Assert.Equal(HttpStatusCode.OK, (await cliente.GetAsync("/health/live")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await cliente.GetAsync("/health/ready")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Health_SinBase_ReadyDevuelve503YLiveSigue200()
+    {
+        // Un puerto donde no hay ninguna base escuchando.
+        await using var sinBase = new WebApplicationFactory<ConsultaApi::Program>().WithWebHostBuilder(b => b
+            .UseSetting("ConnectionStrings:Consulta", "Host=localhost;Port=1;Database=padron;Username=consulta;Password=consulta"));
+        var cliente = sinBase.CreateClient();
+
+        Assert.Equal(HttpStatusCode.OK, (await cliente.GetAsync("/health/live")).StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await cliente.GetAsync("/health/ready")).StatusCode);
+    }
+
+    [Fact]
+    public async Task OpenApi_DocumentaLosEndpointsYMuestraLaPantallaDePrueba()
+    {
+        var cliente = _api.CreateClient();
+
+        var documento = await cliente.GetFromJsonAsync<JsonElement>("/openapi/v1.json");
+        var rutas = documento.GetProperty("paths").EnumerateObject().Select(ruta => ruta.Name);
+
+        Assert.Equal(["/deudores/{cuit}", "/deudores/top/{n}", "/entidades/{codigo}"], rutas.Order());
+        Assert.Equal(HttpStatusCode.OK, (await cliente.GetAsync("/scalar")).StatusCode);
+    }
 }
