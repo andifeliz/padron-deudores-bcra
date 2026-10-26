@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AgregarLogsEstructurados();
 builder.AgregarBaseDeDatos("Consulta");
+builder.Services.AgregarOpciones<OpcionesConsulta>(OpcionesConsulta.Seccion);
 builder.Services.AddSingleton<RepositorioDeudores>();
 builder.Services.AddSingleton<RepositorioEntidades>();
 builder.Services.AddProblemDetails();
@@ -17,6 +18,7 @@ var app = builder.Build();
 
 app.MapHealthChecks("/health");
 app.MapObtenerDeudor();
+app.MapTopDeudores();
 app.MapObtenerEntidad();
 
 app.Run();

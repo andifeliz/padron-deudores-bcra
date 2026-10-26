@@ -50,6 +50,30 @@ public class ConsultaApiTests(EntornoFixture fixture) : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData(2, "20000000004,00007CN0001")]
+    [InlineData(10, "20000000004,00007CN0001,20000000001,20000000002")]
+    public async Task GetTop_DevuelveLosMayoresDeudoresOrdenados(int n, string esperados)
+    {
+        var top = await _api.CreateClient().GetFromJsonAsync<JsonElement[]>($"/deudores/top/{n}");
+
+        Assert.Equal(esperados.Split(','), top!.Select(d => d.GetProperty("nroIdentificacion").GetString()));
+    }
+
+    [Fact]
+    public async Task GetTop_EmpateEnLaSuma_OrdenaPorIdentificacion()
+    {
+        await using (var empate = fixture.BaseDeDatos.CreateCommand(
+            "INSERT INTO deudores VALUES ('20000000020', 1, 500), ('20000000010', 1, 500)"))
+        {
+            await empate.ExecuteNonQueryAsync();
+        }
+
+        var top = await _api.CreateClient().GetFromJsonAsync<JsonElement[]>("/deudores/top/2");
+
+        Assert.Equal(["20000000010", "20000000020"], top!.Select(d => d.GetProperty("nroIdentificacion").GetString()));
+    }
+
+    [Theory]
     [InlineData("/deudores/20000000009")]
     [InlineData("/entidades/99999")]
     public async Task Get_Inexistente_Devuelve404(string ruta)
@@ -64,6 +88,9 @@ public class ConsultaApiTests(EntornoFixture fixture) : IAsyncLifetime
     [InlineData("/deudores/2000000000-")]
     [InlineData("/entidades/abc")]
     [InlineData("/entidades/123456")]
+    [InlineData("/deudores/top/0")]
+    [InlineData("/deudores/top/1001")]
+    [InlineData("/deudores/top/abc")]
     public async Task Get_ParametroMalFormado_Devuelve400(string ruta)
     {
         var respuesta = await _api.CreateClient().GetAsync(ruta);
