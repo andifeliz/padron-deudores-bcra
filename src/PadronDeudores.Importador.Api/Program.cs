@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using PadronDeudores.Importador.Api.Importaciones;
 using PadronDeudores.Infraestructura;
+using PadronDeudores.Infraestructura.Archivos;
 using PadronDeudores.Infraestructura.Logs;
 using PadronDeudores.Infraestructura.Persistencia;
 using Scalar.AspNetCore;
@@ -16,6 +17,7 @@ builder.AgregarLogsEstructurados();
 builder.AgregarBaseDeDatos("Importador");
 builder.AgregarColaImportaciones();
 builder.AgregarArchivosS3();
+builder.Services.AgregarOpciones<OpcionesArchivos>(OpcionesArchivos.Seccion);
 builder.Services.AgregarOpciones<OpcionesImportacion>(OpcionesImportacion.Seccion);
 builder.Services.AddSingleton<RepositorioImportaciones>();
 builder.Services.AddSingleton<RegistroImportacion>();

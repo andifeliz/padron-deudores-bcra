@@ -34,6 +34,7 @@ public class ImportacionesApiTests(EntornoFixture fixture)
 
     [Theory]
     [InlineData("../secreto.txt", HttpStatusCode.BadRequest)]
+    [InlineData("..", HttpStatusCode.BadRequest)]
     [InlineData("no-existe.txt", HttpStatusCode.NotFound)]
     public async Task Post_ArchivoInvalido_LoRechaza(string archivo, HttpStatusCode esperado)
     {

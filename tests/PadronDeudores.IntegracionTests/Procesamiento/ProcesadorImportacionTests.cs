@@ -42,11 +42,11 @@ public class ProcesadorImportacionTests(EntornoFixture fixture)
     [Fact]
     public async Task ProcesarAsync_ArchivoInexistente_MarcaFallidaSinAvisar()
     {
-        var id = await fixture.RegistrarImportacionAsync("no-existe.txt");
+        var id = await fixture.RegistrarImportacionAsync("Muestras/no-existe.txt");
         var notificador = new NotificadorEnMemoria();
 
         await Assert.ThrowsAsync<FileNotFoundException>(
-            () => fixture.CrearProcesador(notificador).ProcesarAsync(id, "no-existe.txt", CancellationToken.None));
+            () => fixture.CrearProcesador(notificador).ProcesarAsync(id, "Muestras/no-existe.txt", CancellationToken.None));
 
         Assert.Equal("fallida", await ConsultarAsync<string>("SELECT estado FROM importaciones WHERE id = @id", id));
         // El aviso de falla lo da el consumidor, cuando ya no quedan reintentos.

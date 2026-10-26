@@ -26,6 +26,7 @@ public static class ImportarDesdeUpload
         HttpContext http,
         string? nombre,
         IOptions<OpcionesImportacion> opciones,
+        IOptions<OpcionesArchivos> lugares,
         ArchivosS3 archivos,
         RegistroImportacion registro,
         CancellationToken ct)
@@ -52,7 +53,7 @@ public static class ImportarDesdeUpload
         string archivo;
         try
         {
-            archivo = await archivos.SubirAsync(opciones.Value.BucketArchivos, $"importaciones/{id}/{nombre}", http.Request.Body, ct);
+            archivo = await archivos.SubirAsync(lugares.Value.BucketArchivos, $"importaciones/{id}/{nombre}", http.Request.Body, ct);
         }
         catch (InvalidDataException ex)
         {

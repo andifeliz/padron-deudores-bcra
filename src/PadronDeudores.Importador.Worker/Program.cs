@@ -12,6 +12,7 @@ builder.AgregarLogsEstructurados();
 builder.AgregarBaseDeDatos("Importador");
 builder.AgregarColaImportaciones();
 builder.AgregarArchivosS3();
+builder.Services.AgregarOpciones<OpcionesArchivos>(OpcionesArchivos.Seccion);
 builder.Services.AddSingleton<OrigenDisco>();
 builder.Services.AddSingleton<IOrigenArchivo, OrigenSegunArchivo>();
 builder.Services.AddSingleton<LectorDeudores>();

@@ -43,8 +43,8 @@ public class ConsumidorImportacionesTests(EntornoFixture fixture)
     {
         var urlFallidos = await CrearColaConFallidosAsync();
         var cola = CrearCola(ColaConReintentos);
-        var id = await fixture.RegistrarImportacionAsync("no-existe.txt");
-        await cola.EncolarAsync(new MensajeImportacion(id, "no-existe.txt"), CancellationToken.None);
+        var id = await fixture.RegistrarImportacionAsync("Muestras/no-existe.txt");
+        await cola.EncolarAsync(new MensajeImportacion(id, "Muestras/no-existe.txt"), CancellationToken.None);
         var notificador = new NotificadorEnMemoria();
 
         using var consumidor = CrearConsumidor(cola, notificador);

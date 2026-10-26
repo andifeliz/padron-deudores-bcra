@@ -2,6 +2,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.SQS;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using PadronDeudores.Dominio;
 using PadronDeudores.Importador.Worker.Notificaciones;
@@ -22,7 +23,7 @@ public sealed class EntornoFixture : IAsyncLifetime
     public const string Cola = "importaciones";
     public const string Bucket = "padron-archivos";
 
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17.10").Build();
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17.11").Build();
     private readonly LocalStackContainer _localStack = new LocalStackBuilder("localstack/localstack:4.14.0").Build();
 
     public NpgsqlDataSource BaseDeDatos { get; private set; } = null!;
@@ -59,9 +60,13 @@ public sealed class EntornoFixture : IAsyncLifetime
         await S3.PutBucketAsync(Bucket);
     }
 
+    // Lugares permitidos en los tests: la carpeta Muestras y el bucket de test.
+    public OrigenSegunArchivo CrearOrigen() => new(new OrigenDisco(), new ArchivosS3(S3), Options.Create(
+        new OpcionesArchivos { DirectorioArchivos = Path.GetFullPath("Muestras"), BucketArchivos = Bucket }));
+
     public ProcesadorImportacion CrearProcesador(INotificador? notificador = null) => new(
         BaseDeDatos,
-        new OrigenSegunArchivo(new OrigenDisco(), new ArchivosS3(S3)),
+        CrearOrigen(),
         new LectorDeudores(NullLogger<LectorDeudores>.Instance),
         new CargadorStaging(BaseDeDatos),
         new ConsolidadorResumenes(),

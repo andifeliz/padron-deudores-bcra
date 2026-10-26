@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using PadronDeudores.Dominio;
+using PadronDeudores.Infraestructura.Archivos;
 
 namespace PadronDeudores.Importador.Api.Importaciones;
 
@@ -20,7 +21,7 @@ public static class ImportarDesdeRuta
 
     private static async Task<IResult> ManejarAsync(
         Pedido pedido,
-        IOptions<OpcionesImportacion> opciones,
+        IOptions<OpcionesArchivos> opciones,
         RegistroImportacion registro,
         CancellationToken ct)
     {
