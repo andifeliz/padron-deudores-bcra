@@ -43,6 +43,8 @@ services:
     build:
       context: .
       dockerfile: src/PadronDeudores.Migraciones/Dockerfile
+    # Un PID 1 mínimo (tini) en cada servicio .NET: reenvía las señales y deja terminar al proceso si se cae.
+    init: true
     environment:
       ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:-importador}"
     depends_on:
@@ -53,6 +55,7 @@ services:
     build:
       context: .
       dockerfile: src/PadronDeudores.Importador.Api/Dockerfile
+    init: true
     environment:
       ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:-importador}"
       Aws__ServiceUrl: "http://localstack:4566"
@@ -79,6 +82,7 @@ services:
     build:
       context: .
       dockerfile: src/PadronDeudores.Importador.Worker/Dockerfile
+    init: true
     environment:
       ConnectionStrings__Importador: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-padron};Username=importador;Password=${DB_IMPORTADOR_PASSWORD:-importador}"
       Aws__ServiceUrl: "http://localstack:4566"
@@ -102,6 +106,7 @@ services:
     build:
       context: .
       dockerfile: src/PadronDeudores.Consulta.Api/Dockerfile
+    init: true
     ports:
       - "${CONSULTA_API_PORT:-5002}:8080"
     depends_on:
