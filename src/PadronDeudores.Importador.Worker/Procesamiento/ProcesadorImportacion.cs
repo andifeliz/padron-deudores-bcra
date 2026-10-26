@@ -58,6 +58,9 @@ public sealed class ProcesadorImportacion(
 
     private async Task<ResumenImportacion> ImportarAsync(Guid id, string archivo, CancellationToken ct)
     {
+        // Todos los logs de esta importación (también los del lector) llevan su id.
+        using var alcance = logger.BeginScope(new Dictionary<string, object> { ["ImportacionId"] = id });
+
         await importaciones.MarcarProcesandoAsync(id, ct);
         logger.LogInformation("Importación {ImportacionId} iniciada: {Archivo}", id, archivo);
         var reloj = Stopwatch.StartNew();
@@ -68,11 +71,15 @@ public sealed class ProcesadorImportacion(
             await cargador.CargarAsync(lector.LeerAsync(stream, estadisticas, ct), ct);
         }
 
+        logger.LogInformation("Archivo leído: {Lineas} líneas en {Segundos} s. Calculando resúmenes",
+            estadisticas.LineasLeidas, Math.Round(reloj.Elapsed.TotalSeconds, 1));
+
         await using var conexion = await baseDeDatos.OpenConnectionAsync(ct);
         await using var transaccion = await conexion.BeginTransactionAsync(ct);
         await consolidador.ReemplazarAsync(conexion, transaccion, ct);
 
         var resumen = await ArmarResumenAsync(conexion, transaccion, id, estadisticas, reloj, ct);
+        await cargador.VaciarAsync(conexion, transaccion, ct);
         await importaciones.MarcarCompletadaAsync(conexion, transaccion, id, JsonSerializer.Serialize(resumen, FormatoJson), ct);
         await transaccion.CommitAsync(ct);
 

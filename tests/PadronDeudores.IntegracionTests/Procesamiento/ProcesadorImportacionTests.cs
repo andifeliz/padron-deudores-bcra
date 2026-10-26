@@ -19,6 +19,7 @@ public class ProcesadorImportacionTests(EntornoFixture fixture)
         Assert.Equal((5L, 1L, 4L, 2L), (resumen.LineasLeidas, resumen.LineasInvalidas, resumen.Deudores, resumen.Entidades));
         Assert.Equal("completada", await ConsultarAsync<string>("SELECT estado FROM importaciones WHERE id = @id", id));
         Assert.Equal(4L, await ConsultarAsync<long>("SELECT count(*) FROM deudores", id));
+        Assert.Equal(0L, await ConsultarAsync<long>("SELECT count(*) FROM staging", id));
     }
 
     [Fact]

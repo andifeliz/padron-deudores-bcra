@@ -38,9 +38,10 @@ public sealed class RepositorioImportaciones(NpgsqlDataSource baseDeDatos)
             new { id, error, estado = Texto(EstadoImportacion.Fallida) }, ct);
 
     // Va en la transacción del reemplazo: los datos nuevos y el estado "completada" se confirman juntos.
+    // clock_timestamp() es la hora actual; now() sería la hora en que empezó la transacción.
     public Task MarcarCompletadaAsync(NpgsqlConnection conexion, NpgsqlTransaction transaccion, Guid id, string resumen, CancellationToken ct) =>
         conexion.ExecuteAsync(new CommandDefinition(
-            "UPDATE importaciones SET estado = @estado, finalizada_en = now(), resumen = @resumen::jsonb, error = null WHERE id = @id",
+            "UPDATE importaciones SET estado = @estado, finalizada_en = clock_timestamp(), resumen = @resumen::jsonb, error = null WHERE id = @id",
             new { id, resumen, estado = Texto(EstadoImportacion.Completada) }, transaccion, cancellationToken: ct));
 
     private async Task EjecutarAsync(string sql, object parametros, CancellationToken ct)

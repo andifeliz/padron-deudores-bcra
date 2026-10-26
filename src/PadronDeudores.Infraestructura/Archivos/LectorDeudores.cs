@@ -8,6 +8,9 @@ namespace PadronDeudores.Infraestructura.Archivos;
 // Recorre deudores.txt línea por línea (streaming): entrega las válidas y cuenta y loguea las inválidas.
 public sealed class LectorDeudores(ILogger<LectorDeudores> logger)
 {
+    // Cada cuántas líneas se loguea el avance (el archivo real tiene unos 34 millones).
+    private const int LineasPorAvance = 5_000_000;
+
     public async IAsyncEnumerable<LineaDeudor> LeerAsync(
         Stream archivo, EstadisticasLectura estadisticas, [EnumeratorCancellation] CancellationToken ct)
     {
@@ -18,6 +21,11 @@ public sealed class LectorDeudores(ILogger<LectorDeudores> logger)
         while (await lector.ReadLineAsync(ct) is { } linea)
         {
             numeroLinea++;
+            if (numeroLinea % LineasPorAvance == 0)
+            {
+                logger.LogInformation("{Lineas} líneas leídas", numeroLinea);
+            }
+
             if (ParserLineaDeudor.TryParse(linea, out var deudor))
             {
                 estadisticas.ContarValida(deudor.Periodo);

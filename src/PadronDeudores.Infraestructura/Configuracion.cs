@@ -17,7 +17,10 @@ public static class Configuracion
     {
         var cadena = builder.Configuration.GetConnectionString(nombreConexion)
             ?? throw new InvalidOperationException($"Falta la conexión ConnectionStrings:{nombreConexion}.");
-        builder.Services.AddSingleton(NpgsqlDataSource.Create(cadena));
+
+        // No usamos Kerberos: sin esto, Npgsql busca libgssapi_krb5 (que la imagen no trae) y escribe un error falso en el log.
+        var conexion = new NpgsqlConnectionStringBuilder(cadena) { GssEncryptionMode = GssEncryptionMode.Disable };
+        builder.Services.AddSingleton(NpgsqlDataSource.Create(conexion.ConnectionString));
     }
 
     // Las credenciales de AWS se toman del entorno (AWS_ACCESS_KEY_ID y AWS_SECRET_ACCESS_KEY).

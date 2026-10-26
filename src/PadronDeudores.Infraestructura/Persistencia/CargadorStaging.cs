@@ -7,6 +7,7 @@ namespace PadronDeudores.Infraestructura.Persistencia;
 // Vacía la tabla staging y la llena con COPY binario, a medida que llegan las líneas
 public sealed class CargadorStaging(NpgsqlDataSource baseDeDatos)
 {
+    private const string Vaciado = "TRUNCATE staging";
     private const string Copia =
         "COPY staging (codigo_entidad, nro_identificacion, situacion, nivel_riesgo, prestamos) FROM STDIN (FORMAT BINARY)";
 
@@ -14,7 +15,7 @@ public sealed class CargadorStaging(NpgsqlDataSource baseDeDatos)
     public async Task<ulong> CargarAsync(IAsyncEnumerable<LineaDeudor> deudores, CancellationToken ct)
     {
         await using var conexion = await baseDeDatos.OpenConnectionAsync(ct);
-        await using (var vaciar = new NpgsqlCommand("TRUNCATE staging", conexion))
+        await using (var vaciar = new NpgsqlCommand(Vaciado, conexion))
         {
             await vaciar.ExecuteNonQueryAsync(ct);
         }
@@ -31,6 +32,13 @@ public sealed class CargadorStaging(NpgsqlDataSource baseDeDatos)
         }
 
         return await copia.CompleteAsync(ct);
+    }
+
+    // Libera el espacio de staging (unos 2 GB con el archivo real) una vez calculados los resúmenes.
+    public async Task VaciarAsync(NpgsqlConnection conexion, NpgsqlTransaction transaccion, CancellationToken ct)
+    {
+        await using var vaciar = new NpgsqlCommand(Vaciado, conexion, transaccion);
+        await vaciar.ExecuteNonQueryAsync(ct);
     }
 
     // Un código no documentado no tiene nivel: se guarda null
